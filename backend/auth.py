@@ -6,7 +6,7 @@ from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from jose import JWTError, jwt
 from passlib.context import CryptContext
 from sqlalchemy.orm import Session
-from database import get_db
+from database import get_db, set_rls_org
 from models import User, Organizzazione, RuoloEnum
 
 SECRET_KEY = os.getenv("SECRET_KEY", "changeme-use-a-long-random-string-in-production")
@@ -62,9 +62,13 @@ def get_active_org_id(
         org_id_header = request.headers.get("X-Organization-Id")
         if org_id_header:
             try:
-                return int(org_id_header)
+                org_id = int(org_id_header)
             except (ValueError, TypeError):
                 raise HTTPException(status_code=400, detail="Header X-Organization-Id non valido")
+            set_rls_org(db, org_id)
+            return org_id
+        # Proprietario senza org selezionata: nessun filtro RLS (vede tutto)
+        set_rls_org(db, None)
         raise HTTPException(
             status_code=400,
             detail="Seleziona un'organizzazione per accedere ai dati"
@@ -80,6 +84,7 @@ def get_active_org_id(
             detail="Accesso bloccato: licenza scaduta. Contatta l'amministratore per rinnovare."
         )
 
+    set_rls_org(db, current_user.organizzazione_id)
     return current_user.organizzazione_id
 
 

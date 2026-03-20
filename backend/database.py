@@ -1,6 +1,6 @@
 import os
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy import create_engine, text
+from sqlalchemy.orm import sessionmaker, Session
 
 DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://tickets:tickets@localhost:5432/tickets")
 
@@ -14,6 +14,18 @@ def get_db():
         yield db
     finally:
         db.close()
+
+
+def set_rls_org(db: Session, org_id: int | None) -> None:
+    """
+    Imposta il contesto RLS per la sessione corrente.
+    - org_id = None o 0 → nessun filtro (proprietario / migrazioni)
+    - org_id = N       → filtra tutte le tabelle multi-tenant all'organizzazione N
+    Il SET LOCAL è valido solo per la transazione corrente, quindi è sicuro
+    con il connection pooling: si azzera automaticamente a fine richiesta.
+    """
+    val = str(org_id) if org_id else '0'
+    db.execute(text(f"SET LOCAL app.current_org_id = '{val}'"))
 
 
 def init_db():
