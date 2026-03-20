@@ -64,8 +64,8 @@ def upgrade():
     # 2. Inserisce organizzazione di default solo se non esiste
     op.execute(sa.text(
         "INSERT INTO organizzazioni (nome, attivo) "
-        "SELECT 'Infoservizi soc coop', true "
-        "WHERE NOT EXISTS (SELECT 1 FROM organizzazioni WHERE nome='Infoservizi soc coop')"
+        "SELECT 'Morpheus Hub', true "
+        "WHERE NOT EXISTS (SELECT 1 FROM organizzazioni LIMIT 1)"
     ))
 
     # 3. Aggiunge colonna organizzazione_id a tutte le tabelle (se non esiste già)

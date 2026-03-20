@@ -103,6 +103,7 @@ def require_any(u: User = Depends(get_current_user)): return u
 def create_default_admin(db: Session):
     """Crea utente proprietario di default se non esiste nessun utente."""
     if db.query(User).count() == 0:
+        org = db.query(Organizzazione).filter_by(nome="Morpheus Hub").first()
         admin = User(
             email="admin@admin.local",
             nome="Admin",
@@ -110,7 +111,7 @@ def create_default_admin(db: Session):
             password_hash=hash_password("admin123"),
             ruolo=RuoloEnum.proprietario,
             attivo=True,
-            organizzazione_id=None,  # proprietario non appartiene a nessuna org
+            organizzazione_id=org.id if org else None,
         )
         db.add(admin)
         db.commit()

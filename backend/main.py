@@ -52,10 +52,10 @@ app.include_router(email_config_router)
 def create_default_org(db):
     from models import Organizzazione
     if db.query(Organizzazione).count() == 0:
-        org = Organizzazione(nome="Infoservizi soc coop", attivo=True)
+        org = Organizzazione(nome="Morpheus Hub", attivo=True, licenza_attiva=True)
         db.add(org)
         db.commit()
-        print("✓ Organizzazione 'Infoservizi soc coop' creata")
+        print("✓ Organizzazione 'Morpheus Hub' creata")
 
 
 @app.on_event("startup")
