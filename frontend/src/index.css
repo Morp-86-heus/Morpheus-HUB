@@ -1,0 +1,87 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+  @apply bg-gray-50 text-gray-900;
+}
+
+/* ── Dark mode global overrides ─────────────────────────────────────────────── */
+.dark body                          { background-color: #0f172a; color: #f1f5f9; }
+
+/* Backgrounds */
+.dark .bg-white                     { background-color: #1e293b !important; }
+.dark .bg-gray-50                   { background-color: #0f172a !important; }
+.dark .bg-gray-100                  { background-color: #1e293b !important; }
+.dark .bg-gray-200                  { background-color: #334155 !important; }
+
+/* Text */
+.dark .text-gray-900                { color: #f1f5f9 !important; }
+.dark .text-gray-800                { color: #e2e8f0 !important; }
+.dark .text-gray-700                { color: #cbd5e1 !important; }
+.dark .text-gray-600                { color: #94a3b8 !important; }
+.dark .text-gray-500                { color: #64748b !important; }
+.dark .text-gray-400                { color: #475569 !important; }
+
+/* Borders */
+.dark .border-gray-100              { border-color: #1e293b !important; }
+.dark .border-gray-200              { border-color: #334155 !important; }
+.dark .border-gray-300              { border-color: #475569 !important; }
+
+/* Dividers */
+.dark .divide-gray-100 > * + *     { border-color: #1e293b !important; }
+.dark .divide-gray-200 > * + *     { border-color: #334155 !important; }
+
+/* Hover states */
+.dark .hover\:bg-gray-50:hover     { background-color: #1e293b !important; }
+.dark .hover\:bg-gray-100:hover    { background-color: #334155 !important; }
+
+/* Sidebar & nav active */
+.dark .hover\:bg-red-50:hover      { background-color: rgba(239,68,68,0.12) !important; }
+.dark .hover\:bg-blue-50:hover     { background-color: rgba(59,130,246,0.12) !important; }
+
+/* Table striping */
+.dark .bg-gray-50.thead-row        { background-color: #1a2540 !important; }
+
+/* Inputs, selects, textareas */
+.dark input:not([type="checkbox"]):not([type="radio"]),
+.dark select,
+.dark textarea {
+  background-color: #1e293b;
+  color: #e2e8f0;
+  border-color: #475569;
+}
+.dark input:not([type="checkbox"]):not([type="radio"]):focus,
+.dark select:focus,
+.dark textarea:focus {
+  border-color: #3b82f6;
+}
+.dark input::placeholder,
+.dark textarea::placeholder { color: #475569; }
+
+/* Disabled inputs */
+.dark input:disabled,
+.dark select:disabled { opacity: 0.5; }
+
+/* Shadows */
+.dark .shadow,
+.dark .shadow-md,
+.dark .shadow-xl { box-shadow: 0 1px 8px rgba(0,0,0,0.5) !important; }
+
+/* ── Pannelli modali: tema sempre chiaro per leggibilità ─────────────────── */
+.dark .modal-panel                      { background-color: #ffffff !important; color: #111827 !important; }
+.dark .modal-panel .bg-white            { background-color: #ffffff !important; }
+.dark .modal-panel .bg-gray-50          { background-color: #f9fafb !important; }
+.dark .modal-panel .bg-gray-100         { background-color: #f3f4f6 !important; }
+.dark .modal-panel .text-gray-800,
+.dark .modal-panel .text-gray-700,
+.dark .modal-panel .text-gray-600,
+.dark .modal-panel .text-gray-500,
+.dark .modal-panel .text-gray-400       { color: inherit !important; }
+.dark .modal-panel .border-gray-200     { border-color: #e5e7eb !important; }
+.dark .modal-panel .border-gray-300     { border-color: #d1d5db !important; }
+.dark .modal-panel input:not([type="checkbox"]):not([type="radio"]),
+.dark .modal-panel select,
+.dark .modal-panel textarea             { background-color: #ffffff !important; color: #111827 !important; border-color: #d1d5db !important; }
+.dark .modal-panel input::placeholder,
+.dark .modal-panel textarea::placeholder { color: #9ca3af !important; }

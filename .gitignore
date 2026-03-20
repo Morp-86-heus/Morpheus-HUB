@@ -1,0 +1,45 @@
+# Claude Code (stato locale)
+.claude/
+
+# Dati sensibili
+data/Interventi_Tecnici.xlsm
+data/*.xlsm
+data/*.xlsx
+data/*.xls
+
+# Variabili d'ambiente
+.env
+.env.local
+.env.*.local
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+*.egg-info/
+dist/
+build/
+.venv/
+venv/
+env/
+
+# Node
+node_modules/
+frontend/dist/
+frontend/.cache/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Log
+*.log
+logs/
