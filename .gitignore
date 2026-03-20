@@ -11,6 +11,10 @@ data/*.xls
 .env
 .env.local
 .env.*.local
+scripts/.env.sync
+
+# Backup database
+backups/
 
 # Python
 __pycache__/
