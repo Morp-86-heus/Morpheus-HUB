@@ -129,6 +129,12 @@ const Icon = ({ name, className = "w-5 h-5" }) => {
           d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2a1 1 0 01-.293.707L13 13.414V19a1 1 0 01-.553.894l-4 2A1 1 0 017 21v-7.586L3.293 6.707A1 1 0 013 6V4z" />
       </svg>
     ),
+    database: (
+      <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+          d="M4 7c0-1.657 3.582-3 8-3s8 1.343 8 3M4 7v5c0 1.657 3.582 3 8 3s8-1.343 8-3V7M4 12v5c0 1.657 3.582 3 8 3s8-1.343 8-3v-5" />
+      </svg>
+    ),
   }
   return icons[name] || null
 }
@@ -228,6 +234,7 @@ export default function Sidebar() {
   const adminNavItems = [
     { to: '/organizzazioni', icon: <Icon name="orgs" />, label: 'Organizzazioni', exact: true },
     { to: '/contabilita', icon: <Icon name="contabilita" />, label: 'Contabilità' },
+    { to: '/admin/database', icon: <Icon name="database" />, label: 'Database' },
   ]
 
   const orgNavItems = [

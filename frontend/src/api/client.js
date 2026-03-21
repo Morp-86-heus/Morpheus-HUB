@@ -179,4 +179,17 @@ export const emailConfigApi = {
   testEmail: (to_email) => api.post('/email-config/test', { to_email }),
 }
 
+export const adminDbApi = {
+  info: () => api.get('/admin/db/info'),
+  exportUrl: () => '/api/admin/db/export',
+  import: (file) => {
+    const form = new FormData()
+    form.append('file', file)
+    return api.post('/admin/db/import', form, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+      timeout: 300000, // 5 minuti
+    })
+  },
+}
+
 export default api

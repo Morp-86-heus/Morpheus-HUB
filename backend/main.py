@@ -14,6 +14,7 @@ from routers.servizi import router as servizi_router
 from routers.contratti_servizi import router as contratti_servizi_router
 from routers.opportunita import router as opportunita_router
 from routers.email_config import router as email_config_router
+from routers.admin_db import router as admin_db_router
 from auth import create_default_admin
 
 app = FastAPI(title="Ticket Management API", version="2.0.0")
@@ -47,6 +48,7 @@ app.include_router(servizi_router)
 app.include_router(contratti_servizi_router)
 app.include_router(opportunita_router)
 app.include_router(email_config_router)
+app.include_router(admin_db_router)
 
 
 def create_default_org(db):
