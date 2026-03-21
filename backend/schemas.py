@@ -694,3 +694,46 @@ class OpportunitaOut(BaseModel):
     organizzazione_id: Optional[int] = None
     created_at: Optional[datetime] = None
     updated_at: Optional[datetime] = None
+
+
+# ── Calendario ────────────────────────────────────────────────────────────────
+
+class EventoCreate(BaseModel):
+    titolo: str
+    descrizione: Optional[str] = None
+    data_inizio: date
+    ora_inizio: Optional[str] = None
+    data_fine: date
+    ora_fine: Optional[str] = None
+    tutto_il_giorno: bool = False
+    condiviso: bool = False
+    colore: Optional[str] = '#4285f4'
+
+
+class EventoUpdate(BaseModel):
+    titolo: Optional[str] = None
+    descrizione: Optional[str] = None
+    data_inizio: Optional[date] = None
+    ora_inizio: Optional[str] = None
+    data_fine: Optional[date] = None
+    ora_fine: Optional[str] = None
+    tutto_il_giorno: Optional[bool] = None
+    condiviso: Optional[bool] = None
+    colore: Optional[str] = None
+
+
+class EventoOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    id: int
+    titolo: str
+    descrizione: Optional[str] = None
+    data_inizio: date
+    ora_inizio: Optional[str] = None
+    data_fine: date
+    ora_fine: Optional[str] = None
+    tutto_il_giorno: bool
+    condiviso: bool
+    colore: Optional[str] = None
+    organizzazione_id: int
+    created_by: int
+    created_at: Optional[datetime] = None

@@ -24,6 +24,7 @@ import ServiziPage from './pages/ServiziPage'
 import AbbonamentiPage from './pages/AbbonamentiPage'
 import FunnelPage from './pages/FunnelPage'
 import AdminDatabasePage from './pages/AdminDatabasePage'
+import CalendarioPage from './pages/CalendarioPage'
 
 function AuthErrorToast() {
   const [messages, setMessages] = useState([])
@@ -169,6 +170,7 @@ function AppRoutes() {
             <Route path="/servizi" element={<ProtectedRoute allow="servizi.view"><ServiziPage /></ProtectedRoute>} />
             <Route path="/abbonamenti" element={<ProtectedRoute allow="abbonamenti.view"><AbbonamentiPage /></ProtectedRoute>} />
             <Route path="/funnel" element={<ProtectedRoute allow="funnel.view"><FunnelPage /></ProtectedRoute>} />
+            <Route path="/calendario" element={<ProtectedRoute><CalendarioPage /></ProtectedRoute>} />
             <Route path="/admin/database" element={<ProtectedRoute allowRoles={['proprietario']}><AdminDatabasePage /></ProtectedRoute>} />
             {/* Il proprietario con org attiva può anche tornare alla console org */}
             {isProprietario && (

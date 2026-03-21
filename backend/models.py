@@ -362,6 +362,27 @@ class TicketChiusura(Base):
     ticket = relationship("Ticket", back_populates="chiusura")
 
 
+class Evento(Base):
+    __tablename__ = "eventi"
+
+    id = Column(Integer, primary_key=True, index=True)
+    titolo = Column(String(200), nullable=False)
+    descrizione = Column(Text, nullable=True)
+    data_inizio = Column(Date, nullable=False)
+    ora_inizio = Column(String(5), nullable=True)
+    data_fine = Column(Date, nullable=False)
+    ora_fine = Column(String(5), nullable=True)
+    tutto_il_giorno = Column(Boolean, nullable=False, default=False)
+    condiviso = Column(Boolean, nullable=False, default=False)
+    colore = Column(String(20), nullable=True, default='#4285f4')
+    organizzazione_id = Column(Integer, ForeignKey("organizzazioni.id", ondelete="CASCADE"), nullable=False, index=True)
+    created_by = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    created_at = Column(DateTime, server_default=func.now())
+    updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())
+
+    creator = relationship("User", foreign_keys=[created_by])
+
+
 class EmailSmtpConfig(Base):
     __tablename__ = "email_smtp_config"
 

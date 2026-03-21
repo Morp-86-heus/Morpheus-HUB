@@ -42,6 +42,13 @@ api.interceptors.response.use(
   }
 )
 
+export const eventiApi = {
+  list: (params) => api.get('/eventi', { params }),
+  create: (data) => api.post('/eventi', data),
+  update: (id, data) => api.put(`/eventi/${id}`, data),
+  delete: (id) => api.delete(`/eventi/${id}`),
+}
+
 export const ticketsApi = {
   list: (params) => api.get('/tickets', { params }),
   get: (id) => api.get(`/tickets/${id}`),

@@ -135,6 +135,12 @@ const Icon = ({ name, className = "w-5 h-5" }) => {
           d="M4 7c0-1.657 3.582-3 8-3s8 1.343 8 3M4 7v5c0 1.657 3.582 3 8 3s8-1.343 8-3V7M4 12v5c0 1.657 3.582 3 8 3s8-1.343 8-3v-5" />
       </svg>
     ),
+    calendario: (
+      <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+          d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+      </svg>
+    ),
   }
   return icons[name] || null
 }
@@ -351,6 +357,10 @@ export default function Sidebar() {
         {/* Statistiche */}
         {!(isProprietario && !activeOrg) && can('view_stats') && (
           <NavItem to="/stats" icon={<Icon name="stats" />} label="Statistiche" collapsed={collapsed} onClick={onNav} />
+        )}
+        {/* Calendario */}
+        {!(isProprietario && !activeOrg) && (
+          <NavItem to="/calendario" icon={<Icon name="calendario" />} label="Calendario" collapsed={collapsed} onClick={onNav} />
         )}
         {/* Gruppo Amministrazione (solo per amministratori e proprietari) */}
         {(isProprietario && !activeOrg) ? null : showAmministrazione && (
