@@ -187,9 +187,10 @@ export const adminDbApi = {
     form.append('file', file)
     return api.post('/admin/db/import', form, {
       headers: { 'Content-Type': 'multipart/form-data' },
-      timeout: 300000, // 5 minuti
+      timeout: 300000, // 5 minuti per l'upload
     })
   },
+  importStatus: (jobId) => api.get(`/admin/db/import/status/${jobId}`),
 }
 
 export default api

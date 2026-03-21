@@ -153,6 +153,7 @@ export default function AdminDatabasePage() {
 
   const [importFile, setImportFile] = useState(null)
   const [importLoading, setImportLoading] = useState(false)
+  const [importStatus, setImportStatus] = useState(null) // pending | running | done | error
   const [importResult, setImportResult] = useState(null)
   const [importError, setImportError] = useState(null)
   const [showConfirm, setShowConfirm] = useState(false)
@@ -227,16 +228,41 @@ export default function AdminDatabasePage() {
     setImportLoading(true)
     setImportError(null)
     setImportResult(null)
+    setImportStatus('pending')
+    setShowConfirm(false)
     try {
-      await adminDbApi.import(importFile)
+      // 1. Upload file → riceve job_id immediatamente
+      const { data } = await adminDbApi.import(importFile)
+      const jobId = data.job_id
+
+      // 2. Polling stato ogni 3 secondi
+      await new Promise((resolve, reject) => {
+        const interval = setInterval(async () => {
+          try {
+            const { data: job } = await adminDbApi.importStatus(jobId)
+            setImportStatus(job.status)
+            if (job.status === 'done') {
+              clearInterval(interval)
+              resolve(job)
+            } else if (job.status === 'error') {
+              clearInterval(interval)
+              reject(new Error(job.message))
+            }
+          } catch (e) {
+            clearInterval(interval)
+            reject(e)
+          }
+        }, 3000)
+      })
+
       setImportResult('Database ripristinato con successo. La pagina si ricaricherà tra 3 secondi.')
       setImportFile(null)
       setTimeout(() => window.location.reload(), 3000)
     } catch (e) {
-      setImportError(e.response?.data?.detail || 'Errore durante l\'importazione')
+      setImportError(e.message || e.response?.data?.detail || 'Errore durante l\'importazione')
+      setImportStatus(null)
     } finally {
       setImportLoading(false)
-      setShowConfirm(false)
     }
   }
 
@@ -389,6 +415,17 @@ export default function AdminDatabasePage() {
             )}
           </div>
 
+          {importLoading && (
+            <div className="flex items-center gap-3 px-4 py-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg text-sm text-blue-700 dark:text-blue-300">
+              <svg className="animate-spin w-4 h-4 shrink-0" viewBox="0 0 24 24" fill="none">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
+              </svg>
+              {importStatus === 'pending' && 'Upload in corso...'}
+              {importStatus === 'running' && 'Ripristino database in corso... (può richiedere alcuni minuti)'}
+              {(!importStatus || importStatus === 'pending') && 'Caricamento file...'}
+            </div>
+          )}
           {importResult && <Alert type="success">{importResult}</Alert>}
           {importError && <Alert type="error">{importError}</Alert>}
 

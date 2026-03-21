@@ -2,7 +2,8 @@ import os
 import subprocess
 import tempfile
 import gzip
-import shutil
+import threading
+import uuid
 from urllib.parse import urlparse
 from datetime import datetime
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
@@ -11,6 +12,9 @@ from sqlalchemy.orm import Session
 from sqlalchemy import text
 from database import get_db
 from auth import require_proprietario
+
+# Stato dei job di import in memoria {job_id: {status, message, started_at, finished_at}}
+_import_jobs: dict = {}
 
 router = APIRouter(prefix="/api/admin/db", tags=["admin-db"])
 
@@ -92,33 +96,11 @@ def export_database(_=Depends(require_proprietario)):
     )
 
 
-# ── Import ────────────────────────────────────────────────────────────────────
+# ── Import (asincrono) ────────────────────────────────────────────────────────
 
-@router.post("/import")
-async def import_database(
-    file: UploadFile = File(...),
-    _=Depends(require_proprietario),
-):
-    """Ripristina il database da un file .sql o .sql.gz caricato."""
-    params = _parse_db_url()
-    env = _pg_env(params)
-
-    if not (file.filename.endswith(".sql") or file.filename.endswith(".sql.gz")):
-        raise HTTPException(400, "Il file deve essere .sql oppure .sql.gz")
-
-    # Salva il file caricato in un temp file
-    with tempfile.NamedTemporaryFile(delete=False, suffix=".sql") as tmp:
-        tmp_path = tmp.name
-        content = await file.read()
-        # Decomprimi se .gz
-        if file.filename.endswith(".gz"):
-            try:
-                content = gzip.decompress(content)
-            except Exception as e:
-                raise HTTPException(400, f"File .gz non valido: {e}")
-        content = _strip_incompatible_set(content)
-        tmp.write(content)
-
+def _run_import(job_id: str, tmp_path: str, params: dict, env: dict):
+    """Eseguito in un thread separato. Aggiorna _import_jobs con lo stato."""
+    _import_jobs[job_id]["status"] = "running"
     try:
         cmd = [
             "psql",
@@ -130,18 +112,74 @@ async def import_database(
             "--single-transaction",
             "-v", "ON_ERROR_STOP=1",
         ]
-        proc = subprocess.run(cmd, env=env, capture_output=True, timeout=300)
+        proc = subprocess.run(cmd, env=env, capture_output=True, timeout=1800)
         if proc.returncode != 0:
-            raise HTTPException(500, f"Import fallito: {proc.stderr.decode()[:500]}")
+            error = proc.stderr.decode(errors="replace")[:1000]
+            _import_jobs[job_id].update(status="error", message=error)
+            return
 
-        # Esegui migrazioni pendenti
+        # Migrazioni pendenti
         alembic_cmd = ["alembic", "-c", "/app/alembic.ini", "upgrade", "head"]
-        subprocess.run(alembic_cmd, capture_output=True, timeout=60)
+        subprocess.run(alembic_cmd, capture_output=True, timeout=120)
 
+        _import_jobs[job_id].update(status="done", message="Database ripristinato con successo")
+
+    except subprocess.TimeoutExpired:
+        _import_jobs[job_id].update(status="error", message="Timeout superato (30 minuti)")
+    except Exception as e:
+        _import_jobs[job_id].update(status="error", message=str(e))
     finally:
-        os.unlink(tmp_path)
+        try:
+            os.unlink(tmp_path)
+        except OSError:
+            pass
+        _import_jobs[job_id]["finished_at"] = datetime.now().isoformat()
 
-    return {"ok": True, "message": "Database ripristinato con successo"}
+
+@router.post("/import")
+async def import_database(
+    file: UploadFile = File(...),
+    _=Depends(require_proprietario),
+):
+    """Carica il file e avvia l'import in background. Ritorna subito un job_id."""
+    if not (file.filename.endswith(".sql") or file.filename.endswith(".sql.gz")):
+        raise HTTPException(400, "Il file deve essere .sql oppure .sql.gz")
+
+    content = await file.read()
+    if file.filename.endswith(".gz"):
+        try:
+            content = gzip.decompress(content)
+        except Exception as e:
+            raise HTTPException(400, f"File .gz non valido: {e}")
+    content = _strip_incompatible_set(content)
+
+    with tempfile.NamedTemporaryFile(delete=False, suffix=".sql") as tmp:
+        tmp.write(content)
+        tmp_path = tmp.name
+
+    job_id = str(uuid.uuid4())
+    _import_jobs[job_id] = {
+        "status": "pending",
+        "message": "In attesa di avvio...",
+        "started_at": datetime.now().isoformat(),
+        "finished_at": None,
+    }
+
+    params = _parse_db_url()
+    env = _pg_env(params)
+    thread = threading.Thread(target=_run_import, args=(job_id, tmp_path, params, env), daemon=True)
+    thread.start()
+
+    return {"job_id": job_id}
+
+
+@router.get("/import/status/{job_id}")
+def import_status(job_id: str, _=Depends(require_proprietario)):
+    """Restituisce lo stato di un job di import."""
+    job = _import_jobs.get(job_id)
+    if not job:
+        raise HTTPException(404, "Job non trovato")
+    return job
 
 
 # ── Info DB ───────────────────────────────────────────────────────────────────
