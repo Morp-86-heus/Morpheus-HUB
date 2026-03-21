@@ -306,7 +306,7 @@ def chiudi_ticket(
         for doc in payload.documenti:
             try:
                 header, b64data = doc.dataUrl.split(",", 1)
-                ext = "jpg" if "jpeg" in header or "jpg" in header else "png"
+                ext = "pdf" if "pdf" in header else ("jpg" if "jpeg" in header or "jpg" in header else "png")
                 filename = f"{uuid_lib.uuid4().hex}.{ext}"
                 filepath = os.path.join(upload_dir, filename)
                 with open(filepath, "wb") as f:
@@ -509,5 +509,6 @@ def get_documento(
         raise HTTPException(status_code=404, detail="File non trovato")
 
     ext = filename.rsplit(".", 1)[-1].lower()
-    media_type = "image/jpeg" if ext in ("jpg", "jpeg") else "image/png"
+    media_types = {"jpg": "image/jpeg", "jpeg": "image/jpeg", "png": "image/png", "pdf": "application/pdf"}
+    media_type = media_types.get(ext, "application/octet-stream")
     return FileResponse(filepath, media_type=media_type)

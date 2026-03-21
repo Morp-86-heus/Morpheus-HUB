@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react'
 import api from '../api/client'
 
-function AuthImage({ src, alt, className }) {
+function AuthDoc({ src, alt, className }) {
   const [blobUrl, setBlobUrl] = useState(null)
+  const isPdf = src.toLowerCase().endsWith('.pdf')
 
   useEffect(() => {
     let url = null
@@ -16,6 +17,19 @@ function AuthImage({ src, alt, className }) {
 
   if (blobUrl === null) return <div className={`${className} bg-gray-100 animate-pulse`} />
   if (blobUrl === '') return <div className={`${className} bg-gray-100 flex items-center justify-center text-xs text-gray-400`}>errore</div>
+
+  if (isPdf) return (
+    <div className={`${className} bg-red-50 flex flex-col items-center justify-center gap-1 cursor-pointer hover:bg-red-100 transition-colors`} onClick={openFull}>
+      <svg className="w-10 h-10 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
+          d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 13h6M9 17h4" />
+      </svg>
+      <span className="text-xs font-bold text-red-500 uppercase tracking-wide">PDF</span>
+      <span className="text-xs text-red-400">Apri</span>
+    </div>
+  )
+
   return <img src={blobUrl} alt={alt} className={`${className} cursor-pointer`} onClick={openFull} />
 }
 import { useNavigate } from 'react-router-dom'
@@ -107,7 +121,7 @@ function ChiusuraSection({ chiusura, ticketId }) {
                 return (
                   <div key={i}
                     className="rounded-lg overflow-hidden border border-green-100 bg-white hover:border-green-400 transition-colors">
-                    <AuthImage src={url} alt={d.nome}
+                    <AuthDoc src={url} alt={d.nome}
                       className="w-full aspect-[4/3] object-cover" />
                     <p className="text-xs text-gray-500 truncate px-2 py-1">{d.nome}</p>
                   </div>
