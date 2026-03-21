@@ -1,4 +1,23 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import api from '../api/client'
+
+function AuthImage({ src, alt, className }) {
+  const [blobUrl, setBlobUrl] = useState(null)
+
+  useEffect(() => {
+    let url = null
+    api.get(src, { responseType: 'blob' })
+      .then(res => { url = URL.createObjectURL(res.data); setBlobUrl(url) })
+      .catch(() => setBlobUrl(''))
+    return () => { if (url) URL.revokeObjectURL(url) }
+  }, [src])
+
+  const openFull = () => { if (blobUrl) window.open(blobUrl, '_blank') }
+
+  if (blobUrl === null) return <div className={`${className} bg-gray-100 animate-pulse`} />
+  if (blobUrl === '') return <div className={`${className} bg-gray-100 flex items-center justify-center text-xs text-gray-400`}>errore</div>
+  return <img src={blobUrl} alt={alt} className={`${className} cursor-pointer`} onClick={openFull} />
+}
 import { useNavigate } from 'react-router-dom'
 import { ticketsApi } from '../api/client'
 import { useAuth } from '../contexts/AuthContext'
@@ -86,12 +105,12 @@ function ChiusuraSection({ chiusura, ticketId }) {
                 const filename = d.path.split('/').pop()
                 const url = `/api/tickets/${ticketId}/documenti/${filename}`
                 return (
-                  <a key={i} href={url} target="_blank" rel="noreferrer"
-                    className="block rounded-lg overflow-hidden border border-green-100 bg-white hover:border-green-400 transition-colors">
-                    <img src={url} alt={d.nome}
+                  <div key={i}
+                    className="rounded-lg overflow-hidden border border-green-100 bg-white hover:border-green-400 transition-colors">
+                    <AuthImage src={url} alt={d.nome}
                       className="w-full aspect-[4/3] object-cover" />
                     <p className="text-xs text-gray-500 truncate px-2 py-1">{d.nome}</p>
-                  </a>
+                  </div>
                 )
               })}
             </div>
