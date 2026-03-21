@@ -1,5 +1,8 @@
 FROM python:3.12-slim
 
+ARG BUILD_ID=dev
+LABEL build_id="${BUILD_ID}"
+
 WORKDIR /app
 
 RUN apt-get update && apt-get install -y --no-install-recommends \

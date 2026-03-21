@@ -1,6 +1,9 @@
 # Build stage
 FROM node:20-alpine AS builder
 
+ARG BUILD_ID=dev
+LABEL build_id="${BUILD_ID}"
+
 WORKDIR /app
 
 COPY package.json ./

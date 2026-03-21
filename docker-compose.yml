@@ -16,7 +16,10 @@ services:
       retries: 10
 
   backend:
-    build: ./backend
+    build:
+      context: ./backend
+      args:
+        BUILD_ID: "20260321-1"
     ports:
       - "18000:8000"
     environment:
@@ -30,7 +33,10 @@ services:
     restart: unless-stopped
 
   frontend:
-    build: ./frontend
+    build:
+      context: ./frontend
+      args:
+        BUILD_ID: "20260321-1"
     ports:
       - "13000:80"
     depends_on:
