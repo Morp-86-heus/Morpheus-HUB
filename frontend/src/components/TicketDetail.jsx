@@ -23,11 +23,14 @@ function Field({ label, value, mono }) {
   )
 }
 
-function ChiusuraSection({ chiusura }) {
+function ChiusuraSection({ chiusura, ticketId }) {
   if (!chiusura) return null
 
   let parti = []
   try { parti = JSON.parse(chiusura.parti_json || '[]') } catch {}
+
+  let documenti = []
+  try { documenti = JSON.parse(chiusura.documenti_json || '[]') } catch {}
 
   const fmtDate = (d) => d ? new Date(d).toLocaleDateString('it-IT') : '—'
 
@@ -72,6 +75,25 @@ function ChiusuraSection({ chiusura }) {
                   )}
                 </div>
               ))}
+            </div>
+          </div>
+        )}
+        {documenti.length > 0 && (
+          <div className="col-span-2">
+            <dt className="text-xs text-gray-400 mb-2">Documenti allegati ({documenti.length})</dt>
+            <div className="grid grid-cols-3 gap-2">
+              {documenti.map((d, i) => {
+                const filename = d.path.split('/').pop()
+                const url = `/api/tickets/${ticketId}/documenti/${filename}`
+                return (
+                  <a key={i} href={url} target="_blank" rel="noreferrer"
+                    className="block rounded-lg overflow-hidden border border-green-100 bg-white hover:border-green-400 transition-colors">
+                    <img src={url} alt={d.nome}
+                      className="w-full aspect-[4/3] object-cover" />
+                    <p className="text-xs text-gray-500 truncate px-2 py-1">{d.nome}</p>
+                  </a>
+                )
+              })}
             </div>
           </div>
         )}
@@ -138,7 +160,7 @@ export default function TicketDetail({ ticket, onClose, onDeleted, onRefresh }) 
             </div>
 
             {/* Dati chiusura se presenti */}
-            <ChiusuraSection chiusura={ticket.chiusura} />
+            <ChiusuraSection chiusura={ticket.chiusura} ticketId={ticket.id} />
 
             <div className="col-span-2 text-xs text-gray-300">
               <div>Creato: {ticket.created_at ? new Date(ticket.created_at).toLocaleString('it-IT') : '—'}</div>
