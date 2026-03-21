@@ -592,12 +592,12 @@ export default function CloseTicketModal({ ticket, onClose, onClosed }) {
   })
   const [parti, setParti] = useState([])
 
-  // Carica immagini già salvate dalla chiusura esistente (path → url relativa)
+  // Carica immagini già salvate dalla chiusura esistente (path → url autenticata)
   const existingDocs = ticket.chiusura?.documenti_json
-    ? JSON.parse(ticket.chiusura.documenti_json).map(d => ({
-        nome: d.nome,
-        url: `/uploads/${d.path}`,  // già salvata su disco, nessun dataUrl
-      }))
+    ? JSON.parse(ticket.chiusura.documenti_json).map(d => {
+        const filename = d.path.split('/').pop()
+        return { nome: d.nome, url: `/api/tickets/${ticket.id}/documenti/${filename}` }
+      })
     : []
   const [documenti, setDocumenti] = useState(existingDocs)
   const [saving, setSaving] = useState(false)

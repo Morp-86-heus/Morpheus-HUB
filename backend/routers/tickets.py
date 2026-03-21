@@ -1,7 +1,7 @@
 from datetime import datetime, timezone
 from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, Query
-from fastapi.responses import StreamingResponse
+from fastapi.responses import StreamingResponse, FileResponse
 from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import or_
 from sqlalchemy.exc import IntegrityError
@@ -483,3 +483,31 @@ def get_chiusura(
     if not chiusura:
         raise HTTPException(status_code=404, detail="Dati di chiusura non trovati")
     return chiusura
+
+
+@router.get("/{ticket_id}/documenti/{filename}")
+def get_documento(
+    ticket_id: int,
+    filename: str,
+    db: Session = Depends(get_db),
+    _: User = Depends(_tutti),
+    org_id: int = Depends(get_active_org_id),
+):
+    # Verifica che il ticket appartenga all'org dell'utente
+    ticket = db.query(Ticket).filter(Ticket.id == ticket_id, Ticket.organizzazione_id == org_id).first()
+    if not ticket:
+        raise HTTPException(status_code=404, detail="Ticket non trovato")
+
+    # Costruisci il path assoluto e verifica che sia dentro la directory attesa
+    base_dir = f"/app/uploads/chiusure/{ticket_id}"
+    filepath = os.path.realpath(os.path.join(base_dir, filename))
+    expected_prefix = os.path.realpath(base_dir)
+    if not filepath.startswith(expected_prefix + os.sep) and filepath != expected_prefix:
+        raise HTTPException(status_code=400, detail="Path non valido")
+
+    if not os.path.isfile(filepath):
+        raise HTTPException(status_code=404, detail="File non trovato")
+
+    ext = filename.rsplit(".", 1)[-1].lower()
+    media_type = "image/jpeg" if ext in ("jpg", "jpeg") else "image/png"
+    return FileResponse(filepath, media_type=media_type)
