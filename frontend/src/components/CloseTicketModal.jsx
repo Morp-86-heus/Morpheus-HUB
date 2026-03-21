@@ -271,7 +271,7 @@ function CameraModal({ onCapture, onClose }) {
           <span className="text-sm font-semibold text-white">Scatta documento</span>
           <div className="flex items-center gap-2">
             {!preview && ready && (
-              <button onClick={handleFlip}
+              <button type="button" onClick={handleFlip}
                 className="p-1.5 rounded-lg bg-gray-700 hover:bg-gray-600 text-white transition-colors"
                 title="Inverti fotocamera">
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -280,7 +280,7 @@ function CameraModal({ onCapture, onClose }) {
                 </svg>
               </button>
             )}
-            <button onClick={onClose}
+            <button type="button" onClick={onClose}
               className="p-1.5 rounded-lg bg-gray-700 hover:bg-gray-600 text-white transition-colors">
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -330,17 +330,17 @@ function CameraModal({ onCapture, onClose }) {
         <div className="bg-gray-900 px-6 py-4 flex items-center justify-center gap-4">
           {preview ? (
             <>
-              <button onClick={handleRiscatta}
+              <button type="button" onClick={handleRiscatta}
                 className="px-4 py-2 border border-gray-600 text-gray-300 rounded-xl text-sm hover:bg-gray-800 transition-colors">
                 Riscatta
               </button>
-              <button onClick={handleConferma}
+              <button type="button" onClick={handleConferma}
                 className="px-6 py-2 bg-blue-600 text-white rounded-xl text-sm font-semibold hover:bg-blue-700 transition-colors">
                 ✓ Usa questa foto
               </button>
             </>
           ) : (
-            <button onClick={handleScatta} disabled={!ready || !!error}
+            <button type="button" onClick={handleScatta} disabled={!ready || !!error}
               className="w-16 h-16 rounded-full bg-white border-4 border-gray-400 hover:scale-105 disabled:opacity-40 disabled:cursor-not-allowed transition-transform shadow-lg"
               title="Scatta"
             >
