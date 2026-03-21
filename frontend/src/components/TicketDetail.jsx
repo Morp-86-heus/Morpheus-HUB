@@ -103,7 +103,7 @@ function ChiusuraSection({ chiusura, ticketId }) {
             <div className="grid grid-cols-3 gap-2">
               {documenti.map((d, i) => {
                 const filename = d.path.split('/').pop()
-                const url = `/api/tickets/${ticketId}/documenti/${filename}`
+                const url = `/tickets/${ticketId}/documenti/${filename}`
                 return (
                   <div key={i}
                     className="rounded-lg overflow-hidden border border-green-100 bg-white hover:border-green-400 transition-colors">
