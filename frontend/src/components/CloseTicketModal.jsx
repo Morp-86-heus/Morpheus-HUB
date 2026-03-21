@@ -580,15 +580,39 @@ function CameraModal({ onCapture, onClose }) {
 }
 
 /* ─── Sezione documenti ──────────────────────────────────────────────────────── */
-function DocumentiSection({ documenti, onChange }) {
+function DocumentiSection({ documenti, onChange, ticketId }) {
   const [showCamera, setShowCamera] = useState(false)
+  const [saving, setSaving] = useState(false)
   const fileRef = useRef(null)
+
+  const unsaved = documenti.filter(d => d.dataUrl)
 
   const handleCapture = (dataUrl) => {
     const isPdf = dataUrl.startsWith('data:application/pdf')
     const nome = isPdf ? `Scan ${documenti.length + 1}` : `Foto ${documenti.length + 1}`
     onChange([...documenti, { dataUrl, nome }])
     setShowCamera(false)
+  }
+
+  const handleSalva = async () => {
+    if (!ticketId || !unsaved.length) return
+    setSaving(true)
+    try {
+      const res = await ticketsApi.salvaDocumenti(ticketId, unsaved)
+      // Sostituisce i doc non salvati con quelli tornati dal server (hanno path, non dataUrl)
+      const salvatMap = {}
+      unsaved.forEach((d, i) => { salvatMap[i] = res.data.salvati[i] })
+      let si = 0
+      onChange(documenti.map(d => {
+        if (!d.dataUrl) return d
+        const srv = res.data.salvati[si++]
+        return srv ? { nome: srv.nome, url: `/tickets/${ticketId}/documenti/${srv.path.split('/').pop()}` } : d
+      }))
+    } catch {
+      alert('Errore durante il salvataggio dei documenti')
+    } finally {
+      setSaving(false)
+    }
   }
 
   const handleFileImport = (e) => {
@@ -630,6 +654,20 @@ function DocumentiSection({ documenti, onChange }) {
               </svg>
               Importa file
             </button>
+            {unsaved.length > 0 && (
+              <button type="button" onClick={handleSalva} disabled={saving}
+                className="flex items-center gap-1.5 text-xs px-3 py-1.5 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-60 transition-colors">
+                {saving ? 'Salvataggio...' : (
+                  <>
+                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                        d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
+                    </svg>
+                    Salva ({unsaved.length})
+                  </>
+                )}
+              </button>
+            )}
             <input ref={fileRef} type="file" accept="image/*,application/pdf" multiple className="hidden"
               onChange={handleFileImport} />
           </div>
@@ -671,6 +709,11 @@ function DocumentiSection({ documenti, onChange }) {
                       className="w-full text-xs border border-gray-200 rounded px-2 py-1 focus:outline-none focus:ring-1 focus:ring-blue-400 bg-white"
                     />
                   </div>
+                  {doc.dataUrl && (
+                    <span className="absolute top-1.5 left-1.5 px-1.5 py-0.5 bg-orange-500 text-white text-[10px] font-bold rounded leading-none">
+                      non salvato
+                    </span>
+                  )}
                   <button type="button" onClick={() => remove(i)}
                     className="absolute top-1.5 right-1.5 w-6 h-6 rounded-full bg-black/50 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-500">
                     <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1119,7 +1162,7 @@ export default function CloseTicketModal({ ticket, onClose, onClosed }) {
             </div>
 
             {/* Documenti */}
-            <DocumentiSection documenti={documenti} onChange={setDocumenti} />
+            <DocumentiSection documenti={documenti} onChange={setDocumenti} ticketId={ticket.id} />
 
             {/* Footer */}
             <div className="flex gap-3 pt-2 border-t">

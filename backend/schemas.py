@@ -125,6 +125,10 @@ class DocumentoAllegato(BaseModel):
     dataUrl: str  # base64 data URL — convertito in file dal backend
 
 
+class DocumentiSalvaPayload(BaseModel):
+    documenti: List[DocumentoAllegato]
+
+
 class TicketChiusuraCreate(BaseModel):
     data_inizio: Optional[date] = None
     ora_inizio: Optional[str] = None

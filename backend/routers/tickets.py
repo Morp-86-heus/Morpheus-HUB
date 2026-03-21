@@ -485,6 +485,48 @@ def get_chiusura(
     return chiusura
 
 
+@router.post("/{ticket_id}/documenti")
+def salva_documenti(
+    ticket_id: int,
+    payload: schemas.DocumentiSalvaPayload,
+    db: Session = Depends(get_db),
+    _: User = Depends(_tutti),
+    org_id: int = Depends(get_active_org_id),
+):
+    obj = db.query(Ticket).filter(Ticket.id == ticket_id, Ticket.organizzazione_id == org_id).first()
+    if not obj:
+        raise HTTPException(status_code=404, detail="Ticket non trovato")
+
+    chiusura = db.query(TicketChiusura).filter(TicketChiusura.ticket_id == ticket_id).first()
+    existing = json.loads(chiusura.documenti_json) if chiusura and chiusura.documenti_json else []
+
+    upload_dir = f"/app/uploads/chiusure/{ticket_id}"
+    os.makedirs(upload_dir, exist_ok=True)
+    salvati = []
+    for doc in payload.documenti:
+        try:
+            header, b64data = doc.dataUrl.split(",", 1)
+            ext = "pdf" if "pdf" in header else ("jpg" if "jpeg" in header or "jpg" in header else "png")
+            filename = f"{uuid_lib.uuid4().hex}.{ext}"
+            with open(os.path.join(upload_dir, filename), "wb") as f:
+                f.write(base64.b64decode(b64data))
+            entry = {"nome": doc.nome, "path": f"chiusure/{ticket_id}/{filename}"}
+            existing.append(entry)
+            salvati.append(entry)
+        except Exception:
+            pass
+
+    documenti_json = json.dumps(existing, ensure_ascii=False) if existing else None
+    if chiusura:
+        chiusura.documenti_json = documenti_json
+        chiusura.updated_at = datetime.utcnow()
+    else:
+        chiusura = TicketChiusura(ticket_id=ticket_id, documenti_json=documenti_json)
+        db.add(chiusura)
+    db.commit()
+    return {"salvati": salvati, "tutti": existing}
+
+
 @router.get("/{ticket_id}/documenti/{filename}")
 def get_documento(
     ticket_id: int,
