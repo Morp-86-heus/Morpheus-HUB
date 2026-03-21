@@ -174,8 +174,11 @@ async def import_database(
 
 
 @router.get("/import/status/{job_id}")
-def import_status(job_id: str, _=Depends(require_proprietario)):
-    """Restituisce lo stato di un job di import."""
+def import_status(job_id: str):
+    """Restituisce lo stato di un job di import.
+    Non richiede autenticazione: il job_id UUID funge da token implicito.
+    Necessario perché durante l'import il DB è in lock e le query auth fallirebbero.
+    """
     job = _import_jobs.get(job_id)
     if not job:
         raise HTTPException(404, "Job non trovato")

@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { adminDbApi } from '../api/client'
+import { useAuth } from '../contexts/AuthContext'
 
 // ── Icone ─────────────────────────────────────────────────────────────────────
 
@@ -144,6 +145,7 @@ function ConfirmImportModal({ file, onConfirm, onCancel, loading }) {
 // ── Pagina principale ─────────────────────────────────────────────────────────
 
 export default function AdminDatabasePage() {
+  const { logout } = useAuth()
   const [info, setInfo] = useState(null)
   const [infoLoading, setInfoLoading] = useState(true)
   const [infoError, setInfoError] = useState(null)
@@ -255,9 +257,9 @@ export default function AdminDatabasePage() {
         }, 3000)
       })
 
-      setImportResult('Database ripristinato con successo. La pagina si ricaricherà tra 3 secondi.')
+      setImportResult('Database ripristinato con successo. Effettua nuovamente il login tra 3 secondi.')
       setImportFile(null)
-      setTimeout(() => window.location.reload(), 3000)
+      setTimeout(() => logout(), 3000)
     } catch (e) {
       setImportError(e.message || e.response?.data?.detail || 'Errore durante l\'importazione')
       setImportStatus(null)
