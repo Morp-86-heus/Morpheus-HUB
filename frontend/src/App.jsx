@@ -133,6 +133,7 @@ function AppRoutes() {
             <Route path="/contabilita" element={<ContabilitaPage />} />
             <Route path="/profile" element={<ProfilePage />} />
             <Route path="/organizzazioni/:orgId/anagrafica" element={<OrgAnagraficaPage />} />
+            <Route path="/admin/database" element={<AdminDatabasePage />} />
             <Route path="*" element={<Navigate to="/organizzazioni" replace />} />
           </Routes>
         </main>
