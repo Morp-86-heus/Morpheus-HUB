@@ -31,15 +31,15 @@ RLS_TABLES = [
     'email_notifica_eventi',
 ]
 
-# Policy USING: permette la riga se context = '0'/non impostato OPPURE org combacia
+# NULLIF converte stringa vuota in NULL (current_setting restituisce '' quando
+# la variabile non è impostata, NON NULL — quindi COALESCE da solo non basta)
 POLICY_USING = """
-    COALESCE(current_setting('app.current_org_id', true), '0') = '0'
+    COALESCE(NULLIF(current_setting('app.current_org_id', true), ''), '0') = '0'
     OR organizzazione_id::text = current_setting('app.current_org_id', true)
 """
 
-# WITH CHECK: impedisce di scrivere righe in un'org diversa dal contesto attivo
 POLICY_CHECK = """
-    COALESCE(current_setting('app.current_org_id', true), '0') = '0'
+    COALESCE(NULLIF(current_setting('app.current_org_id', true), ''), '0') = '0'
     OR organizzazione_id::text = current_setting('app.current_org_id', true)
 """
 
