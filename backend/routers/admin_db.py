@@ -35,6 +35,21 @@ def _pg_env(params: dict) -> dict:
     return env
 
 
+# Parametri SET introdotti in PG17+ che PG16 non riconosce
+_PG17_PARAMS = {"transaction_timeout"}
+
+def _strip_incompatible_set(sql_bytes: bytes) -> bytes:
+    """Rimuove righe SET <param> = ... non supportate da PostgreSQL 16."""
+    lines = sql_bytes.decode("utf-8", errors="replace").splitlines(keepends=True)
+    filtered = [
+        line for line in lines
+        if not any(
+            line.strip().lower().startswith(f"set {p}") for p in _PG17_PARAMS
+        )
+    ]
+    return "".join(filtered).encode("utf-8")
+
+
 # ── Export ────────────────────────────────────────────────────────────────────
 
 @router.get("/export")
@@ -64,7 +79,7 @@ def export_database(_=Depends(require_proprietario)):
     except subprocess.TimeoutExpired:
         raise HTTPException(500, "pg_dump: timeout superato (120s)")
 
-    sql_bytes = proc.stdout
+    sql_bytes = _strip_incompatible_set(proc.stdout)
     gz_bytes = gzip.compress(sql_bytes, compresslevel=6)
 
     return StreamingResponse(
@@ -101,6 +116,7 @@ async def import_database(
                 content = gzip.decompress(content)
             except Exception as e:
                 raise HTTPException(400, f"File .gz non valido: {e}")
+        content = _strip_incompatible_set(content)
         tmp.write(content)
 
     try:
