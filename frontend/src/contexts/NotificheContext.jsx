@@ -56,7 +56,7 @@ function playNotificationSound() {
 }
 
 export function NotificheProvider({ children }) {
-  const { user } = useAuth()
+  const { user, activeOrg, isProprietario } = useAuth()
   const [notifiche, setNotifiche] = useState([])
   const [nonLette, setNonLette] = useState(0)
   const timerRef = useRef(null)
@@ -64,6 +64,7 @@ export function NotificheProvider({ children }) {
 
   const fetch = useCallback(async () => {
     if (!user) return
+    if (isProprietario && !activeOrg) return
     try {
       const res = await notificheApi.list()
       const items = res.data.items
@@ -84,7 +85,7 @@ export function NotificheProvider({ children }) {
 
   // Polling automatico
   useEffect(() => {
-    if (!user) {
+    if (!user || (isProprietario && !activeOrg)) {
       setNotifiche([])
       setNonLette(0)
       knownIdsRef.current = null
@@ -93,7 +94,7 @@ export function NotificheProvider({ children }) {
     fetch()
     timerRef.current = setInterval(fetch, POLL_INTERVAL)
     return () => clearInterval(timerRef.current)
-  }, [user, fetch])
+  }, [user, activeOrg, isProprietario, fetch])
 
   const markRead = useCallback(async (id) => {
     await notificheApi.markRead(id)
