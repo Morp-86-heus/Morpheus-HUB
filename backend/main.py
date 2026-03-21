@@ -1,5 +1,7 @@
+import os
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 from database import init_db, SessionLocal
 from routers import tickets, tecnici, lookup, stats
 from routers.clienti_diretti import router as clienti_diretti_router
@@ -49,6 +51,10 @@ app.include_router(contratti_servizi_router)
 app.include_router(opportunita_router)
 app.include_router(email_config_router)
 app.include_router(admin_db_router)
+
+# Serve file statici (immagini chiusure ticket)
+os.makedirs("/app/uploads", exist_ok=True)
+app.mount("/uploads", StaticFiles(directory="/app/uploads"), name="uploads")
 
 
 def create_default_org(db):

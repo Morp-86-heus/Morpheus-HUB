@@ -420,7 +420,7 @@ function DocumentiSection({ documenti, onChange }) {
           <div className="grid grid-cols-3 gap-3">
             {documenti.map((doc, i) => (
               <div key={i} className="relative group rounded-xl overflow-hidden border border-gray-200 bg-gray-50">
-                <img src={doc.dataUrl} alt={doc.nome}
+                <img src={doc.dataUrl || doc.url} alt={doc.nome}
                   className="w-full aspect-[4/3] object-cover" />
                 <div className="p-2">
                   <input
@@ -555,7 +555,7 @@ function printChiusura(ticket, form, parti, documenti = []) {
     <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:16px">
       ${documenti.map(d => `
         <div style="break-inside:avoid">
-          <img src="${d.dataUrl}" alt="${d.nome}"
+          <img src="${d.dataUrl || d.url}" alt="${d.nome}"
             style="width:100%;border-radius:6px;border:1px solid #e5e7eb;display:block" />
           <div style="font-size:10px;color:#6b7280;margin-top:4px;text-align:center">${d.nome}</div>
         </div>`).join('')}
@@ -591,7 +591,15 @@ export default function CloseTicketModal({ ticket, onClose, onClosed }) {
     note_chiusura: '',
   })
   const [parti, setParti] = useState([])
-  const [documenti, setDocumenti] = useState([])
+
+  // Carica immagini già salvate dalla chiusura esistente (path → url relativa)
+  const existingDocs = ticket.chiusura?.documenti_json
+    ? JSON.parse(ticket.chiusura.documenti_json).map(d => ({
+        nome: d.nome,
+        url: `/uploads/${d.path}`,  // già salvata su disco, nessun dataUrl
+      }))
+    : []
+  const [documenti, setDocumenti] = useState(existingDocs)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState(null)
   const [saved, setSaved] = useState(false)
@@ -654,6 +662,7 @@ export default function CloseTicketModal({ ticket, onClose, onClosed }) {
         ...form,
         parti: parti.filter(p => p.descrizione.trim() || p.ricambio_articolo_id),
         prestazioni: prestazioni.length > 0 ? prestazioni : undefined,
+        documenti: documenti.filter(d => d.dataUrl).map(d => ({ nome: d.nome, dataUrl: d.dataUrl })),
       }
       await ticketsApi.chiudi(ticket.id, payload)
       setSaved(true)

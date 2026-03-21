@@ -355,6 +355,7 @@ class TicketChiusura(Base):
     note_chiusura = Column(Text, nullable=True)
     parti_json = Column(Text, nullable=True)
     prestazioni_json = Column(Text, nullable=True)
+    documenti_json = Column(Text, nullable=True)  # JSON: [{nome, path}, ...]
     created_at = Column(DateTime, server_default=func.now())
     updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())
 

@@ -120,6 +120,11 @@ class PrestazioneSelezionata(BaseModel):
     quantita: float = 1.0
 
 
+class DocumentoAllegato(BaseModel):
+    nome: str
+    dataUrl: str  # base64 data URL — convertito in file dal backend
+
+
 class TicketChiusuraCreate(BaseModel):
     data_inizio: Optional[date] = None
     ora_inizio: Optional[str] = None
@@ -130,6 +135,7 @@ class TicketChiusuraCreate(BaseModel):
     note_chiusura: Optional[str] = None
     parti: Optional[List[ParteSostituita]] = None
     prestazioni: Optional[List[PrestazioneSelezionata]] = None
+    documenti: Optional[List[DocumentoAllegato]] = None
 
 
 class TicketChiusuraOut(BaseModel):
@@ -146,6 +152,7 @@ class TicketChiusuraOut(BaseModel):
     note_chiusura: Optional[str] = None
     parti_json: Optional[str] = None
     prestazioni_json: Optional[str] = None
+    documenti_json: Optional[str] = None
     created_at: Optional[datetime] = None
     updated_at: Optional[datetime] = None
 

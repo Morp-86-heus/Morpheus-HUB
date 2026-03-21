@@ -7,6 +7,9 @@ from sqlalchemy import or_
 from sqlalchemy.exc import IntegrityError
 import io
 import json
+import os
+import base64
+import uuid as uuid_lib
 
 from database import get_db
 from models import Ticket, TicketChiusura, User, RuoloEnum, Articolo, MovimentoMagazzino
@@ -295,6 +298,24 @@ def chiudi_ticket(
     parti_json = json.dumps([p.model_dump() for p in payload.parti], ensure_ascii=False) if payload.parti else None
     prestazioni_json = json.dumps([p.model_dump() for p in payload.prestazioni], ensure_ascii=False) if payload.prestazioni else None
 
+    # Salva nuove immagini su disco
+    existing_docs = json.loads(chiusura.documenti_json) if chiusura and chiusura.documenti_json else []
+    if payload.documenti:
+        upload_dir = f"/app/uploads/chiusure/{ticket_id}"
+        os.makedirs(upload_dir, exist_ok=True)
+        for doc in payload.documenti:
+            try:
+                header, b64data = doc.dataUrl.split(",", 1)
+                ext = "jpg" if "jpeg" in header or "jpg" in header else "png"
+                filename = f"{uuid_lib.uuid4().hex}.{ext}"
+                filepath = os.path.join(upload_dir, filename)
+                with open(filepath, "wb") as f:
+                    f.write(base64.b64decode(b64data))
+                existing_docs.append({"nome": doc.nome, "path": f"chiusure/{ticket_id}/{filename}"})
+            except Exception:
+                pass
+    documenti_json = json.dumps(existing_docs, ensure_ascii=False) if existing_docs else None
+
     if chiusura:
         chiusura.data_inizio = payload.data_inizio
         chiusura.ora_inizio = payload.ora_inizio
@@ -305,6 +326,7 @@ def chiudi_ticket(
         chiusura.note_chiusura = payload.note_chiusura
         chiusura.parti_json = parti_json
         chiusura.prestazioni_json = prestazioni_json
+        chiusura.documenti_json = documenti_json
         chiusura.updated_at = datetime.utcnow()
     else:
         chiusura = TicketChiusura(
@@ -318,6 +340,7 @@ def chiudi_ticket(
             note_chiusura=payload.note_chiusura,
             parti_json=parti_json,
             prestazioni_json=prestazioni_json,
+            documenti_json=documenti_json,
         )
         db.add(chiusura)
 

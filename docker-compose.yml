@@ -30,6 +30,7 @@ services:
         condition: service_healthy
     volumes:
       - ./data:/app/data
+      - uploads_data:/app/uploads
     restart: unless-stopped
 
   frontend:
@@ -45,3 +46,4 @@ services:
 
 volumes:
   postgres_data:
+  uploads_data:
