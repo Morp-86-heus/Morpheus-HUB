@@ -201,22 +201,160 @@ function ParteRow({ parte, index, onChange, onRemove, ticket }) {
   )
 }
 
+/* ─── Scanner: document detection & perspective warp ────────────────────────── */
+function _detectDocumentCorners(canvas) {
+  const W = canvas.width, H = canvas.height
+  const scale = Math.min(1, 500 / Math.max(W, H))
+  const sw = Math.round(W * scale), sh = Math.round(H * scale)
+  const tmp = document.createElement('canvas')
+  tmp.width = sw; tmp.height = sh
+  tmp.getContext('2d').drawImage(canvas, 0, 0, sw, sh)
+  const { data } = tmp.getContext('2d').getImageData(0, 0, sw, sh)
+
+  // Grayscale
+  const g = new Uint8Array(sw * sh)
+  for (let i = 0; i < g.length; i++)
+    g[i] = (data[i * 4] * 77 + data[i * 4 + 1] * 150 + data[i * 4 + 2] * 29) >> 8
+
+  // 3×3 Gaussian blur
+  const b = new Uint8Array(sw * sh)
+  for (let y = 1; y < sh - 1; y++) for (let x = 1; x < sw - 1; x++)
+    b[y * sw + x] = (g[(y-1)*sw+x-1]+2*g[(y-1)*sw+x]+g[(y-1)*sw+x+1]
+                   +2*g[y*sw+x-1]+4*g[y*sw+x]+2*g[y*sw+x+1]
+                   +g[(y+1)*sw+x-1]+2*g[(y+1)*sw+x]+g[(y+1)*sw+x+1]) >> 4
+
+  // Sobel edge magnitude
+  const e = new Uint8Array(sw * sh)
+  for (let y = 1; y < sh - 1; y++) for (let x = 1; x < sw - 1; x++) {
+    const gx = -b[(y-1)*sw+x-1]-2*b[y*sw+x-1]-b[(y+1)*sw+x-1]
+               +b[(y-1)*sw+x+1]+2*b[y*sw+x+1]+b[(y+1)*sw+x+1]
+    const gy = -b[(y-1)*sw+x-1]-2*b[(y-1)*sw+x]-b[(y-1)*sw+x+1]
+               +b[(y+1)*sw+x-1]+2*b[(y+1)*sw+x]+b[(y+1)*sw+x+1]
+    e[y * sw + x] = Math.min(255, Math.sqrt(gx * gx + gy * gy))
+  }
+
+  // Adaptive threshold (mean + 0.5σ)
+  let sum = 0; for (const v of e) sum += v
+  const mean = sum / e.length
+  let vsum = 0; for (const v of e) vsum += (v - mean) ** 2
+  const thresh = mean + Math.sqrt(vsum / e.length) * 0.5
+
+  // Per ogni quadrante trova il punto-bordo più lontano dal centro
+  const cx = sw / 2, cy = sh / 2
+  const minD2 = (Math.sqrt(cx * cx + cy * cy) * 0.2) ** 2
+  const qs = [
+    [(x, y) => x <= cx && y <= cy, (x, y) => -x - y],   // TL
+    [(x, y) => x >= cx && y <= cy, (x, y) =>  x - y],   // TR
+    [(x, y) => x >= cx && y >= cy, (x, y) =>  x + y],   // BR
+    [(x, y) => x <= cx && y >= cy, (x, y) => -x + y],   // BL
+  ]
+  const res = []
+  for (const [ok, score] of qs) {
+    let best = null, bs = -Infinity
+    for (let y = 1; y < sh - 1; y++) for (let x = 1; x < sw - 1; x++) {
+      if (e[y * sw + x] > thresh && ok(x, y) && (x-cx)**2+(y-cy)**2 >= minD2) {
+        const s = score(x, y)
+        if (s > bs) { bs = s; best = { x, y } }
+      }
+    }
+    if (!best) return null
+    res.push({ x: best.x / scale, y: best.y / scale })
+  }
+  return res  // [{x,y}×4] TL TR BR BL in canvas pixel coords
+}
+
+function _gaussElim(A, b) {
+  const n = b.length, M = A.map((r, i) => [...r, b[i]])
+  for (let c = 0; c < n; c++) {
+    let mr = c
+    for (let r = c + 1; r < n; r++) if (Math.abs(M[r][c]) > Math.abs(M[mr][c])) mr = r
+    ;[M[c], M[mr]] = [M[mr], M[c]]
+    for (let r = c + 1; r < n; r++) {
+      const f = M[r][c] / M[c][c]
+      for (let j = c; j <= n; j++) M[r][j] -= f * M[c][j]
+    }
+  }
+  const h = new Array(n).fill(0)
+  for (let i = n - 1; i >= 0; i--) {
+    h[i] = M[i][n]
+    for (let j = i + 1; j < n; j++) h[i] -= M[i][j] * h[j]
+    h[i] /= M[i][i]
+  }
+  return h
+}
+
+function _warpDocument(srcCanvas, corners) {
+  // Downsample source se troppo grande
+  let src = srcCanvas, pts = corners
+  const maxSrc = 2000
+  if (Math.max(src.width, src.height) > maxSrc) {
+    const sc = maxSrc / Math.max(src.width, src.height)
+    const ds = document.createElement('canvas')
+    ds.width = Math.round(src.width * sc); ds.height = Math.round(src.height * sc)
+    ds.getContext('2d').drawImage(src, 0, 0, ds.width, ds.height)
+    pts = corners.map(c => ({ x: c.x * sc, y: c.y * sc }))
+    src = ds
+  }
+
+  const [p0, p1, p2, p3] = pts
+  let outW = Math.round(Math.max(Math.hypot(p1.x-p0.x, p1.y-p0.y), Math.hypot(p2.x-p3.x, p2.y-p3.y)))
+  let outH = Math.round(Math.max(Math.hypot(p3.x-p0.x, p3.y-p0.y), Math.hypot(p2.x-p1.x, p2.y-p1.y)))
+  const cap = 1600
+  if (Math.max(outW, outH) > cap) {
+    const sc = cap / Math.max(outW, outH)
+    outW = Math.round(outW * sc); outH = Math.round(outH * sc)
+  }
+
+  // H mappa output→source (warp inverso)
+  const dst4 = [{ x: 0, y: 0 }, { x: outW, y: 0 }, { x: outW, y: outH }, { x: 0, y: outH }]
+  const A = [], b = []
+  for (let i = 0; i < 4; i++) {
+    const [sx, sy, dx, dy] = [dst4[i].x, dst4[i].y, pts[i].x, pts[i].y]
+    A.push([sx, sy, 1, 0, 0, 0, -dx*sx, -dx*sy]); b.push(dx)
+    A.push([0, 0, 0, sx, sy, 1, -dy*sx, -dy*sy]); b.push(dy)
+  }
+  const hv = _gaussElim(A, b)
+  const H = [[hv[0],hv[1],hv[2]], [hv[3],hv[4],hv[5]], [hv[6],hv[7],1]]
+
+  const SW = src.width, SH = src.height
+  const sD = src.getContext('2d').getImageData(0, 0, SW, SH).data
+  const out = document.createElement('canvas')
+  out.width = outW; out.height = outH
+  const oCtx = out.getContext('2d')
+  const oImg = oCtx.createImageData(outW, outH)
+  const oD = oImg.data
+
+  for (let y = 0; y < outH; y++) for (let x = 0; x < outW; x++) {
+    const w = H[2][0]*x + H[2][1]*y + H[2][2]
+    const sx = Math.round((H[0][0]*x + H[0][1]*y + H[0][2]) / w)
+    const sy = Math.round((H[1][0]*x + H[1][1]*y + H[1][2]) / w)
+    if (sx >= 0 && sx < SW && sy >= 0 && sy < SH) {
+      const si = (sy * SW + sx) * 4, di = (y * outW + x) * 4
+      oD[di] = sD[si]; oD[di+1] = sD[si+1]; oD[di+2] = sD[si+2]; oD[di+3] = 255
+    }
+  }
+  oCtx.putImageData(oImg, 0, 0)
+  return out
+}
+
 /* ─── Camera modal ──────────────────────────────────────────────────────────── */
 function CameraModal({ onCapture, onClose }) {
   const videoRef = useRef(null)
   const canvasRef = useRef(null)
+  const svgRef = useRef(null)
   const streamRef = useRef(null)
   const [ready, setReady] = useState(false)
   const [error, setError] = useState(null)
   const [facing, setFacing] = useState('environment')
-  const [preview, setPreview] = useState(null)  // dataUrl scattata, da confermare
+  const [preview, setPreview] = useState(null)
+  const [corners, setCorners] = useState(null)    // [{x,y}×4] in image pixel coords
+  const [imgDims, setImgDims] = useState(null)    // {w, h}
+  const [draggingIdx, setDraggingIdx] = useState(-1)
+  const [warping, setWarping] = useState(false)
 
   const startCamera = useCallback(async (facingMode) => {
-    if (streamRef.current) {
-      streamRef.current.getTracks().forEach(t => t.stop())
-    }
-    setReady(false)
-    setError(null)
+    if (streamRef.current) streamRef.current.getTracks().forEach(t => t.stop())
+    setReady(false); setError(null)
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
         video: { facingMode, width: { ideal: 1920 }, height: { ideal: 1080 } },
@@ -233,50 +371,71 @@ function CameraModal({ onCapture, onClose }) {
 
   useEffect(() => {
     startCamera(facing)
-    return () => {
-      if (streamRef.current) streamRef.current.getTracks().forEach(t => t.stop())
-    }
+    return () => { if (streamRef.current) streamRef.current.getTracks().forEach(t => t.stop()) }
   }, [])
 
   const handleFlip = () => {
     const next = facing === 'environment' ? 'user' : 'environment'
-    setFacing(next)
-    startCamera(next)
+    setFacing(next); startCamera(next)
+  }
+
+  const _initCorners = (canvas) => {
+    const detected = _detectDocumentCorners(canvas)
+    const m = 0.05, W = canvas.width, H = canvas.height
+    setCorners(detected || [
+      { x: W * m, y: H * m }, { x: W * (1 - m), y: H * m },
+      { x: W * (1 - m), y: H * (1 - m) }, { x: W * m, y: H * (1 - m) },
+    ])
   }
 
   const handleScatta = () => {
-    const video = videoRef.current
-    const canvas = canvasRef.current
+    const video = videoRef.current, canvas = canvasRef.current
     if (!video || !canvas) return
-    canvas.width = video.videoWidth
-    canvas.height = video.videoHeight
+    canvas.width = video.videoWidth; canvas.height = video.videoHeight
     canvas.getContext('2d').drawImage(video, 0, 0)
     setPreview(canvas.toDataURL('image/jpeg', 0.85))
+    setImgDims({ w: canvas.width, h: canvas.height })
+    _initCorners(canvas)
   }
 
+  const handleRiscatta = () => { setPreview(null); setCorners(null); setImgDims(null) }
+
   const handleConferma = () => {
-    if (preview) {
-      onCapture(preview)
-      setPreview(null)
-    }
+    if (preview) { onCapture(preview); setPreview(null); setCorners(null); setImgDims(null) }
   }
 
   const handleConfermaComePdf = async () => {
     if (!preview) return
-    const img = new Image()
-    img.src = preview
-    await new Promise(resolve => { img.onload = resolve })
-    const pdf = new jsPDF({
-      orientation: img.width >= img.height ? 'landscape' : 'portrait',
-      unit: 'px',
-      format: [img.width, img.height],
-    })
-    pdf.addImage(preview, 'JPEG', 0, 0, img.width, img.height)
-    onCapture(pdf.output('datauristring'))
-    setPreview(null)
+    setWarping(true)
+    await new Promise(r => setTimeout(r, 30))
+    try {
+      const outCanvas = (corners && imgDims) ? _warpDocument(canvasRef.current, corners) : canvasRef.current
+      const dataUrl = outCanvas.toDataURL('image/jpeg', 0.9)
+      const img = new Image(); img.src = dataUrl
+      await new Promise(r => { img.onload = r })
+      const pdf = new jsPDF({
+        orientation: outCanvas.width >= outCanvas.height ? 'landscape' : 'portrait',
+        unit: 'px', format: [outCanvas.width, outCanvas.height],
+      })
+      pdf.addImage(dataUrl, 'JPEG', 0, 0, outCanvas.width, outCanvas.height)
+      onCapture(pdf.output('datauristring'))
+      setPreview(null); setCorners(null); setImgDims(null)
+    } finally { setWarping(false) }
   }
 
-  const handleRiscatta = () => setPreview(null)
+  const screenToSvg = (clientX, clientY) => {
+    if (!svgRef.current || !imgDims) return { x: 0, y: 0 }
+    const rect = svgRef.current.getBoundingClientRect()
+    const sc = Math.min(rect.width / imgDims.w, rect.height / imgDims.h)
+    const rw = imgDims.w * sc, rh = imgDims.h * sc
+    return {
+      x: Math.max(0, Math.min(imgDims.w, (clientX - rect.left - (rect.width - rw) / 2) / sc)),
+      y: Math.max(0, Math.min(imgDims.h, (clientY - rect.top - (rect.height - rh) / 2) / sc)),
+    }
+  }
+
+  const R = imgDims ? Math.max(imgDims.w, imgDims.h) * 0.028 : 0
+  const SW_LINE = imgDims ? Math.max(imgDims.w, imgDims.h) * 0.004 : 0
 
   return (
     <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/70">
@@ -316,17 +475,56 @@ function CameraModal({ onCapture, onClose }) {
               <p className="text-red-400 text-sm">{error}</p>
             </div>
           ) : preview ? (
-            <img src={preview} alt="Preview" className="w-full h-full object-contain" />
+            <>
+              <img src={preview} alt="Preview" className="w-full h-full object-contain" />
+
+              {/* Overlay SVG con handle trascinabili */}
+              {corners && imgDims && (
+                <svg
+                  ref={svgRef}
+                  className="absolute inset-0 w-full h-full"
+                  viewBox={`0 0 ${imgDims.w} ${imgDims.h}`}
+                  preserveAspectRatio="xMidYMid meet"
+                  style={{ touchAction: 'none' }}
+                  onPointerMove={draggingIdx >= 0 ? e => {
+                    const p = screenToSvg(e.clientX, e.clientY)
+                    setCorners(prev => prev.map((c, i) => i === draggingIdx ? p : c))
+                  } : undefined}
+                  onPointerUp={() => setDraggingIdx(-1)}
+                  onPointerLeave={() => setDraggingIdx(-1)}
+                >
+                  <polygon
+                    points={corners.map(c => `${c.x},${c.y}`).join(' ')}
+                    fill="rgba(34,197,94,0.12)"
+                    stroke="#22c55e"
+                    strokeWidth={SW_LINE}
+                    strokeLinejoin="round"
+                  />
+                  {corners.map((c, i) => (
+                    <circle key={i} cx={c.x} cy={c.y} r={R}
+                      fill="white" stroke="#22c55e" strokeWidth={SW_LINE}
+                      style={{ cursor: 'grab', touchAction: 'none' }}
+                      onPointerDown={e => { e.currentTarget.setPointerCapture(e.pointerId); setDraggingIdx(i) }}
+                    />
+                  ))}
+                </svg>
+              )}
+
+              {/* Bottone auto-rilevamento */}
+              <button type="button"
+                onClick={() => canvasRef.current && _initCorners(canvasRef.current)}
+                className="absolute top-2 right-2 px-2 py-1 bg-black/60 hover:bg-black/80 text-white text-xs rounded-lg transition-colors">
+                Auto-rileva
+              </button>
+            </>
           ) : (
             <>
-              <video ref={videoRef} autoPlay playsInline muted
-                className="w-full h-full object-cover" />
+              <video ref={videoRef} autoPlay playsInline muted className="w-full h-full object-cover" />
               {!ready && (
                 <div className="absolute inset-0 flex items-center justify-center bg-black/50">
                   <div className="text-white text-sm">Attivazione camera...</div>
                 </div>
               )}
-              {/* Guide overlay */}
               {ready && (
                 <div className="absolute inset-4 border-2 border-white/30 rounded-lg pointer-events-none">
                   <div className="absolute top-0 left-0 w-6 h-6 border-t-2 border-l-2 border-white rounded-tl-lg" />
@@ -354,21 +552,24 @@ function CameraModal({ onCapture, onClose }) {
                 className="px-4 py-2 bg-blue-600 text-white rounded-xl text-sm font-semibold hover:bg-blue-700 transition-colors">
                 ✓ Foto
               </button>
-              <button type="button" onClick={handleConfermaComePdf}
-                className="px-4 py-2 bg-red-600 text-white rounded-xl text-sm font-semibold hover:bg-red-700 transition-colors flex items-center gap-1.5">
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
-                    d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 13h6M9 17h4" />
-                </svg>
-                PDF
+              <button type="button" onClick={handleConfermaComePdf} disabled={warping}
+                className="px-4 py-2 bg-red-600 text-white rounded-xl text-sm font-semibold hover:bg-red-700 disabled:opacity-60 transition-colors flex items-center gap-1.5">
+                {warping ? 'Elaborazione...' : (
+                  <>
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
+                        d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 13h6M9 17h4" />
+                    </svg>
+                    PDF
+                  </>
+                )}
               </button>
             </>
           ) : (
             <button type="button" onClick={handleScatta} disabled={!ready || !!error}
               className="w-16 h-16 rounded-full bg-white border-4 border-gray-400 hover:scale-105 disabled:opacity-40 disabled:cursor-not-allowed transition-transform shadow-lg"
-              title="Scatta"
-            >
+              title="Scatta">
               <span className="sr-only">Scatta</span>
             </button>
           )}
