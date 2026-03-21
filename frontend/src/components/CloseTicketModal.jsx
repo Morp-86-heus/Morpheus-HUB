@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { ticketsApi, listiniApi, magazzinoApi } from '../api/client'
+import { jsPDF } from 'jspdf'
 
 const ESITI = ['Risolto', 'Parzialmente risolto', 'Non risolto']
 const TIPI_PARTE = ['BAD', 'DOA']
@@ -260,6 +261,21 @@ function CameraModal({ onCapture, onClose }) {
     }
   }
 
+  const handleConfermaComePdf = async () => {
+    if (!preview) return
+    const img = new Image()
+    img.src = preview
+    await new Promise(resolve => { img.onload = resolve })
+    const pdf = new jsPDF({
+      orientation: img.width >= img.height ? 'landscape' : 'portrait',
+      unit: 'px',
+      format: [img.width, img.height],
+    })
+    pdf.addImage(preview, 'JPEG', 0, 0, img.width, img.height)
+    onCapture(pdf.output('datauristring'))
+    setPreview(null)
+  }
+
   const handleRiscatta = () => setPreview(null)
 
   return (
@@ -335,8 +351,17 @@ function CameraModal({ onCapture, onClose }) {
                 Riscatta
               </button>
               <button type="button" onClick={handleConferma}
-                className="px-6 py-2 bg-blue-600 text-white rounded-xl text-sm font-semibold hover:bg-blue-700 transition-colors">
-                ✓ Usa questa foto
+                className="px-4 py-2 bg-blue-600 text-white rounded-xl text-sm font-semibold hover:bg-blue-700 transition-colors">
+                ✓ Foto
+              </button>
+              <button type="button" onClick={handleConfermaComePdf}
+                className="px-4 py-2 bg-red-600 text-white rounded-xl text-sm font-semibold hover:bg-red-700 transition-colors flex items-center gap-1.5">
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
+                    d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 13h6M9 17h4" />
+                </svg>
+                PDF
               </button>
             </>
           ) : (
@@ -359,7 +384,9 @@ function DocumentiSection({ documenti, onChange }) {
   const fileRef = useRef(null)
 
   const handleCapture = (dataUrl) => {
-    onChange([...documenti, { dataUrl, nome: `Foto ${documenti.length + 1}` }])
+    const isPdf = dataUrl.startsWith('data:application/pdf')
+    const nome = isPdf ? `Scan ${documenti.length + 1}` : `Foto ${documenti.length + 1}`
+    onChange([...documenti, { dataUrl, nome }])
     setShowCamera(false)
   }
 
