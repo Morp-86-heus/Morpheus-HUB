@@ -28,6 +28,8 @@ import CalendarioPage from './pages/CalendarioPage'
 import ForgotPasswordPage from './pages/ForgotPasswordPage'
 import ResetPasswordPage from './pages/ResetPasswordPage'
 import EmailSistemaPage from './pages/EmailSistemaPage'
+import PrivacyPolicyPage from './pages/PrivacyPolicyPage'
+import CookiePolicyPage from './pages/CookiePolicyPage'
 
 function AuthErrorToast() {
   const [messages, setMessages] = useState([])
@@ -114,6 +116,8 @@ function AppRoutes() {
   // Pagine pubbliche (nessuna autenticazione richiesta)
   if (location.pathname === '/forgot-password') return <ForgotPasswordPage />
   if (location.pathname === '/reset-password') return <ResetPasswordPage />
+  if (location.pathname === '/privacy-policy') return <PrivacyPolicyPage />
+  if (location.pathname === '/cookie-policy') return <CookiePolicyPage />
 
   if (loading) {
     return (

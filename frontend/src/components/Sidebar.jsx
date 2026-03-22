@@ -446,6 +446,10 @@ export default function Sidebar() {
               <Icon name="logout" className="w-4 h-4" />
               Esci
             </button>
+            <div className="flex gap-3 px-1 pt-1">
+              <Link to="/privacy-policy" className="text-[10px] text-gray-300 hover:text-gray-500 transition-colors">Privacy</Link>
+              <Link to="/cookie-policy" className="text-[10px] text-gray-300 hover:text-gray-500 transition-colors">Cookie</Link>
+            </div>
           </div>
         )}
       </div>
