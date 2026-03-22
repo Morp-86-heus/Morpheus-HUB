@@ -19,7 +19,7 @@ const api = axios.create({
 
 // Inietta JWT e, se presente, X-Organization-Id
 api.interceptors.request.use((config) => {
-  const token = localStorage.getItem('token')
+  const token = localStorage.getItem('token') || sessionStorage.getItem('token')
   if (token) {
     config.headers.Authorization = `Bearer ${token}`
   }
