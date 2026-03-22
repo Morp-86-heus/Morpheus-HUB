@@ -215,7 +215,7 @@ export default function ProprietarioDashboardPage() {
 
   const load = () => {
     setLoading(true)
-    api.get('/api/admin/db/system-stats')
+    api.get('/admin/db/system-stats')
       .then(r => { setData(r.data); setLastRefresh(new Date()) })
       .catch(() => setError('Impossibile caricare i dati di sistema'))
       .finally(() => setLoading(false))
