@@ -216,7 +216,6 @@ export default function ClientiDirettiPage() {
   const [form, setForm] = useState(emptyForm)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState(null)
-  const [activeTab, setActiveTab] = useState('anagrafica')
 
   const load = () =>
     clientiDirettiApi.list(search ? { search } : {}).then(r => setClienti(r.data))
@@ -226,11 +225,11 @@ export default function ClientiDirettiPage() {
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }))
 
   const openNew = () => {
-    setEditing(null); setForm(emptyForm); setActiveTab('anagrafica'); setError(null); setShowForm(true)
+    setEditing(null); setForm(emptyForm); setError(null); setShowForm(true)
   }
 
   const openEdit = (c) => {
-    setEditing(c.id); setForm({ ...emptyForm, ...c }); setActiveTab('anagrafica'); setError(null); setShowForm(true)
+    setEditing(c.id); setForm({ ...emptyForm, ...c }); setError(null); setShowForm(true)
   }
 
   const handleSave = async (e) => {
@@ -332,135 +331,120 @@ export default function ClientiDirettiPage() {
                 className="w-7 h-7 rounded-lg flex items-center justify-center text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition-colors text-lg">✕</button>
             </div>
 
-            {editing && (
-              <div className="flex border-b border-gray-100 shrink-0 px-6">
-                {[{ key: 'anagrafica', label: 'Anagrafica' }, { key: 'sedi', label: 'Sedi aggiuntive' }].map(tab => (
-                  <button key={tab.key} onClick={() => setActiveTab(tab.key)}
-                    className={`px-4 py-3 text-sm font-medium border-b-2 transition-colors -mb-px ${
-                      activeTab === tab.key ? 'border-blue-600 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700'
-                    }`}>
-                    {tab.label}
-                  </button>
-                ))}
-              </div>
-            )}
-
             <div className="overflow-y-auto flex-1">
-              {activeTab === 'anagrafica' && (
-                <form id="cliente-form" onSubmit={handleSave} className="p-6 space-y-5">
-                  <div>
-                    <p className={sectionCls}>Anagrafica</p>
-                    <div className="grid grid-cols-2 gap-3">
-                      <div className="col-span-2">
-                        <label className={labelCls}>Ragione Sociale *</label>
-                        <input className={inputCls} required value={form.ragione_sociale} onChange={e => set('ragione_sociale', e.target.value)} />
-                      </div>
-                      <div>
-                        <label className={labelCls}>Partita IVA</label>
-                        <input className={inputCls} value={form.partita_iva} onChange={e => set('partita_iva', e.target.value)} />
-                      </div>
-                      <div>
-                        <label className={labelCls}>Codice Fiscale</label>
-                        <input className={inputCls} value={form.codice_fiscale} onChange={e => set('codice_fiscale', e.target.value)} />
-                      </div>
+              <form id="cliente-form" onSubmit={handleSave} className="p-6 space-y-5">
+                <div>
+                  <p className={sectionCls}>Anagrafica</p>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="col-span-2">
+                      <label className={labelCls}>Ragione Sociale *</label>
+                      <input className={inputCls} required value={form.ragione_sociale} onChange={e => set('ragione_sociale', e.target.value)} />
+                    </div>
+                    <div>
+                      <label className={labelCls}>Partita IVA</label>
+                      <input className={inputCls} value={form.partita_iva} onChange={e => set('partita_iva', e.target.value)} />
+                    </div>
+                    <div>
+                      <label className={labelCls}>Codice Fiscale</label>
+                      <input className={inputCls} value={form.codice_fiscale} onChange={e => set('codice_fiscale', e.target.value)} />
                     </div>
                   </div>
-                  <div>
-                    <p className={sectionCls}>Sede Legale</p>
-                    <div className="grid grid-cols-4 gap-3">
-                      <div className="col-span-3">
-                        <label className={labelCls}>Via</label>
-                        <input className={inputCls} value={form.via} onChange={e => set('via', e.target.value)} />
-                      </div>
-                      <div>
-                        <label className={labelCls}>Civico</label>
-                        <input className={inputCls} value={form.civico} onChange={e => set('civico', e.target.value)} />
-                      </div>
-                      <div>
-                        <label className={labelCls}>CAP</label>
-                        <input className={inputCls} value={form.cap} onChange={e => set('cap', e.target.value)} />
-                      </div>
-                      <div className="col-span-2">
-                        <label className={labelCls}>Città</label>
-                        <input className={inputCls} value={form.citta} onChange={e => set('citta', e.target.value)} />
-                      </div>
-                      <div>
-                        <label className={labelCls}>Provincia</label>
-                        <input className={inputCls} value={form.provincia} onChange={e => set('provincia', e.target.value)} maxLength={5} />
-                      </div>
-                    </div>
-                  </div>
-                  <div>
-                    <p className={sectionCls}>Contatti Aziendali</p>
-                    <div className="grid grid-cols-2 gap-3">
-                      <div>
-                        <label className={labelCls}>Telefono</label>
-                        <input className={inputCls} value={form.telefono} onChange={e => set('telefono', e.target.value)} />
-                      </div>
-                      <div>
-                        <label className={labelCls}>Email</label>
-                        <input className={inputCls} type="email" value={form.email} onChange={e => set('email', e.target.value)} />
-                      </div>
-                      <div>
-                        <label className={labelCls}>PEC</label>
-                        <input className={inputCls} value={form.pec} onChange={e => set('pec', e.target.value)} />
-                      </div>
-                      <div>
-                        <label className={labelCls}>Sito Web</label>
-                        <input className={inputCls} value={form.sito_web} onChange={e => set('sito_web', e.target.value)} />
-                      </div>
-                    </div>
-                  </div>
-                  <div>
-                    <p className={sectionCls}>Referente Principale</p>
-                    <div className="grid grid-cols-2 gap-3">
-                      <div>
-                        <label className={labelCls}>Nome</label>
-                        <input className={inputCls} value={form.referente_nome} onChange={e => set('referente_nome', e.target.value)} />
-                      </div>
-                      <div>
-                        <label className={labelCls}>Ruolo</label>
-                        <input className={inputCls} value={form.referente_ruolo} onChange={e => set('referente_ruolo', e.target.value)} />
-                      </div>
-                      <div>
-                        <label className={labelCls}>Telefono Referente</label>
-                        <input className={inputCls} value={form.referente_telefono} onChange={e => set('referente_telefono', e.target.value)} />
-                      </div>
-                      <div>
-                        <label className={labelCls}>Email Referente</label>
-                        <input className={inputCls} type="email" value={form.referente_email} onChange={e => set('referente_email', e.target.value)} />
-                      </div>
-                    </div>
-                  </div>
-                  <div>
-                    <label className={labelCls}>Note</label>
-                    <textarea className={inputCls} rows={3} value={form.note} onChange={e => set('note', e.target.value)} />
-                  </div>
-                  {error && (
-                    <p className="text-sm text-red-600 bg-red-50 border border-red-100 px-3 py-2.5 rounded-xl">{error}</p>
-                  )}
-                </form>
-              )}
-
-              {activeTab === 'sedi' && editing && (
-                <div className="p-6">
-                  <SediTab clienteId={editing} />
                 </div>
-              )}
+                <div>
+                  <p className={sectionCls}>Sede Legale</p>
+                  <div className="grid grid-cols-4 gap-3">
+                    <div className="col-span-3">
+                      <label className={labelCls}>Via</label>
+                      <input className={inputCls} value={form.via} onChange={e => set('via', e.target.value)} />
+                    </div>
+                    <div>
+                      <label className={labelCls}>Civico</label>
+                      <input className={inputCls} value={form.civico} onChange={e => set('civico', e.target.value)} />
+                    </div>
+                    <div>
+                      <label className={labelCls}>CAP</label>
+                      <input className={inputCls} value={form.cap} onChange={e => set('cap', e.target.value)} />
+                    </div>
+                    <div className="col-span-2">
+                      <label className={labelCls}>Città</label>
+                      <input className={inputCls} value={form.citta} onChange={e => set('citta', e.target.value)} />
+                    </div>
+                    <div>
+                      <label className={labelCls}>Provincia</label>
+                      <input className={inputCls} value={form.provincia} onChange={e => set('provincia', e.target.value)} maxLength={5} />
+                    </div>
+                  </div>
+                </div>
+
+                {editing && (
+                  <div>
+                    <p className={sectionCls}>Sedi aggiuntive</p>
+                    <SediTab clienteId={editing} />
+                  </div>
+                )}
+
+                <div>
+                  <p className={sectionCls}>Contatti Aziendali</p>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className={labelCls}>Telefono</label>
+                      <input className={inputCls} value={form.telefono} onChange={e => set('telefono', e.target.value)} />
+                    </div>
+                    <div>
+                      <label className={labelCls}>Email</label>
+                      <input className={inputCls} type="email" value={form.email} onChange={e => set('email', e.target.value)} />
+                    </div>
+                    <div>
+                      <label className={labelCls}>PEC</label>
+                      <input className={inputCls} value={form.pec} onChange={e => set('pec', e.target.value)} />
+                    </div>
+                    <div>
+                      <label className={labelCls}>Sito Web</label>
+                      <input className={inputCls} value={form.sito_web} onChange={e => set('sito_web', e.target.value)} />
+                    </div>
+                  </div>
+                </div>
+                <div>
+                  <p className={sectionCls}>Referente Principale</p>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className={labelCls}>Nome</label>
+                      <input className={inputCls} value={form.referente_nome} onChange={e => set('referente_nome', e.target.value)} />
+                    </div>
+                    <div>
+                      <label className={labelCls}>Ruolo</label>
+                      <input className={inputCls} value={form.referente_ruolo} onChange={e => set('referente_ruolo', e.target.value)} />
+                    </div>
+                    <div>
+                      <label className={labelCls}>Telefono Referente</label>
+                      <input className={inputCls} value={form.referente_telefono} onChange={e => set('referente_telefono', e.target.value)} />
+                    </div>
+                    <div>
+                      <label className={labelCls}>Email Referente</label>
+                      <input className={inputCls} type="email" value={form.referente_email} onChange={e => set('referente_email', e.target.value)} />
+                    </div>
+                  </div>
+                </div>
+                <div>
+                  <label className={labelCls}>Note</label>
+                  <textarea className={inputCls} rows={3} value={form.note} onChange={e => set('note', e.target.value)} />
+                </div>
+                {error && (
+                  <p className="text-sm text-red-600 bg-red-50 border border-red-100 px-3 py-2.5 rounded-xl">{error}</p>
+                )}
+              </form>
             </div>
 
-            {activeTab === 'anagrafica' && (
-              <div className="border-t border-gray-100 px-6 py-4 flex justify-end gap-2 shrink-0">
-                <button type="button" onClick={() => setShowForm(false)}
-                  className="px-4 py-2 border border-gray-200 text-gray-600 text-sm rounded-xl hover:bg-gray-50 transition-colors">
-                  Annulla
-                </button>
-                <button type="submit" form="cliente-form" disabled={saving}
-                  className="px-4 py-2 bg-blue-600 text-white text-sm font-semibold rounded-xl hover:bg-blue-700 disabled:opacity-50 transition-colors">
-                  {saving ? 'Salvataggio...' : 'Salva'}
-                </button>
-              </div>
-            )}
+            <div className="border-t border-gray-100 px-6 py-4 flex justify-end gap-2 shrink-0">
+              <button type="button" onClick={() => setShowForm(false)}
+                className="px-4 py-2 border border-gray-200 text-gray-600 text-sm rounded-xl hover:bg-gray-50 transition-colors">
+                Annulla
+              </button>
+              <button type="submit" form="cliente-form" disabled={saving}
+                className="px-4 py-2 bg-blue-600 text-white text-sm font-semibold rounded-xl hover:bg-blue-700 disabled:opacity-50 transition-colors">
+                {saving ? 'Salvataggio...' : 'Salva'}
+              </button>
+            </div>
           </div>
         </div>
       )}

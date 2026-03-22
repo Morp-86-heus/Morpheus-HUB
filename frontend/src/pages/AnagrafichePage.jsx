@@ -1,7 +1,7 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import axios from 'axios'
 import { useAuth } from '../contexts/AuthContext'
-import { listiniApi } from '../api/client'
+
 
 // ── Clienti Diretti ──────────────────────────────────────────────────────────
 
@@ -22,7 +22,7 @@ function Field({ label, children }) {
   )
 }
 
-function CDForm({ initial, onSave, onCancel }) {
+function CDForm({ initial, onSave, onCancel, sediContent }) {
   const [form, setForm] = useState(initial || emptyCD)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState(null)
@@ -82,6 +82,13 @@ function CDForm({ initial, onSave, onCancel }) {
         </div>
       </div>
 
+      {sediContent && (
+        <div>
+          <h4 className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">Sedi aggiuntive</h4>
+          {sediContent}
+        </div>
+      )}
+
       {/* Contatti aziendali */}
       <div>
         <h4 className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">Contatti aziendali</h4>
@@ -132,6 +139,175 @@ function CDForm({ initial, onSave, onCancel }) {
   )
 }
 
+// ── Sedi ──────────────────────────────────────────────────────────────────────
+
+const emptySede = {
+  nome: '', via: '', civico: '', cap: '', citta: '', provincia: '',
+  telefono: '', referente_nome: '', referente_telefono: '', referente_email: '', note: ''
+}
+
+function SedeForm({ initial, onSave, onCancel, saving }) {
+  const [f, setF] = useState(initial || emptySede)
+  const set = (k, v) => setF(prev => ({ ...prev, [k]: v }))
+  const inp = (k, type = 'text', extra = {}) => (
+    <input type={type} {...extra}
+      className="w-full border border-gray-300 rounded px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+      value={f[k] || ''} onChange={e => set(k, e.target.value)} />
+  )
+  return (
+    <div className="bg-blue-50 border border-blue-100 rounded-lg p-4 space-y-3">
+      <div className="grid grid-cols-1 gap-3">
+        <div>
+          <label className="block text-xs text-gray-500 mb-1">Nome sede / etichetta</label>
+          {inp('nome')}
+        </div>
+        <div className="grid grid-cols-4 gap-3">
+          <div className="col-span-3">
+            <label className="block text-xs text-gray-500 mb-1">Via</label>
+            {inp('via')}
+          </div>
+          <div>
+            <label className="block text-xs text-gray-500 mb-1">Civico</label>
+            {inp('civico')}
+          </div>
+        </div>
+        <div className="grid grid-cols-3 gap-3">
+          <div>
+            <label className="block text-xs text-gray-500 mb-1">CAP</label>
+            {inp('cap')}
+          </div>
+          <div>
+            <label className="block text-xs text-gray-500 mb-1">Città</label>
+            {inp('citta')}
+          </div>
+          <div>
+            <label className="block text-xs text-gray-500 mb-1">Provincia</label>
+            {inp('provincia')}
+          </div>
+        </div>
+        <div>
+          <label className="block text-xs text-gray-500 mb-1">Telefono</label>
+          {inp('telefono')}
+        </div>
+      </div>
+      <div>
+        <div className="text-xs font-semibold text-gray-400 uppercase mb-2">Referente sede</div>
+        <div className="grid grid-cols-3 gap-3">
+          <div>
+            <label className="block text-xs text-gray-500 mb-1">Nome</label>
+            {inp('referente_nome')}
+          </div>
+          <div>
+            <label className="block text-xs text-gray-500 mb-1">Telefono</label>
+            {inp('referente_telefono')}
+          </div>
+          <div>
+            <label className="block text-xs text-gray-500 mb-1">Email</label>
+            {inp('referente_email', 'email')}
+          </div>
+        </div>
+      </div>
+      <div>
+        <label className="block text-xs text-gray-500 mb-1">Note</label>
+        <textarea rows={2} className="w-full border border-gray-300 rounded px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+          value={f.note || ''} onChange={e => set('note', e.target.value)} />
+      </div>
+      <div className="flex justify-end gap-2">
+        <button type="button" onClick={onCancel}
+          className="px-3 py-1.5 text-sm border border-gray-300 rounded text-gray-600 hover:bg-gray-50">Annulla</button>
+        <button type="button" disabled={saving} onClick={() => onSave(f)}
+          className="px-4 py-1.5 text-sm font-medium bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50">
+          {saving ? 'Salvataggio...' : 'Salva sede'}
+        </button>
+      </div>
+    </div>
+  )
+}
+
+function SediSection({ clienteId }) {
+  const [sedi, setSedi] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [showNew, setShowNew] = useState(false)
+  const [editingId, setEditingId] = useState(null)
+  const [savingId, setSavingId] = useState(null)
+
+  const loadSedi = useCallback(() => {
+    setLoading(true)
+    axios.get(`/api/clienti-diretti/${clienteId}/sedi`)
+      .then(r => setSedi(r.data))
+      .finally(() => setLoading(false))
+  }, [clienteId])
+
+  useEffect(() => { loadSedi() }, [loadSedi])
+
+  const handleCreate = async (data) => {
+    setSavingId('new')
+    try {
+      await axios.post(`/api/clienti-diretti/${clienteId}/sedi`, data)
+      setShowNew(false); loadSedi()
+    } finally { setSavingId(null) }
+  }
+
+  const handleUpdate = async (sid, data) => {
+    setSavingId(sid)
+    try {
+      await axios.put(`/api/clienti-diretti/${clienteId}/sedi/${sid}`, data)
+      setEditingId(null); loadSedi()
+    } finally { setSavingId(null) }
+  }
+
+  const handleDelete = async (sid) => {
+    if (!confirm('Eliminare questa sede?')) return
+    await axios.delete(`/api/clienti-diretti/${clienteId}/sedi/${sid}`)
+    loadSedi()
+  }
+
+  if (loading) return <div className="py-4 text-center text-sm text-gray-400">Caricamento sedi...</div>
+
+  return (
+    <div className="space-y-2">
+      {sedi.length === 0 && !showNew && (
+        <p className="text-xs text-gray-400 italic">Nessuna sede aggiuntiva.</p>
+      )}
+      {sedi.map(sede => (
+        <div key={sede.id} className="border border-gray-200 rounded-lg overflow-hidden">
+          {editingId === sede.id ? (
+            <div className="p-3">
+              <SedeForm initial={sede}
+                onSave={data => handleUpdate(sede.id, data)}
+                onCancel={() => setEditingId(null)}
+                saving={savingId === sede.id} />
+            </div>
+          ) : (
+            <div className="px-3 py-2 flex items-start justify-between gap-2">
+              <div className="text-xs text-gray-700 space-y-0.5">
+                {sede.nome && <p className="font-semibold">{sede.nome}</p>}
+                {(sede.via || sede.citta) && (
+                  <p className="text-gray-500">{[sede.via && `${sede.via}${sede.civico ? ` ${sede.civico}` : ''}`, sede.cap, sede.citta, sede.provincia].filter(Boolean).join(', ')}</p>
+                )}
+                {sede.telefono && <p className="text-gray-500">📞 {sede.telefono}</p>}
+                {sede.referente_nome && <p className="text-gray-400">Ref: {[sede.referente_nome, sede.referente_telefono, sede.referente_email].filter(Boolean).join(' · ')}</p>}
+              </div>
+              <div className="flex gap-2 shrink-0">
+                <button onClick={() => setEditingId(sede.id)} className="text-xs text-blue-600 hover:underline">Modifica</button>
+                <button onClick={() => handleDelete(sede.id)} className="text-xs text-red-500 hover:underline">Elimina</button>
+              </div>
+            </div>
+          )}
+        </div>
+      ))}
+      {showNew ? (
+        <SedeForm onSave={handleCreate} onCancel={() => setShowNew(false)} saving={savingId === 'new'} />
+      ) : (
+        <button onClick={() => setShowNew(true)}
+          className="w-full py-2 border-2 border-dashed border-gray-200 rounded-lg text-xs text-gray-400 hover:border-blue-300 hover:text-blue-500 transition-colors">
+          + Aggiungi sede
+        </button>
+      )}
+    </div>
+  )
+}
+
 function ClientiDirettiTab({ canEdit }) {
   const [items, setItems] = useState([])
   const [search, setSearch] = useState('')
@@ -172,7 +348,8 @@ function ClientiDirettiTab({ canEdit }) {
   if (editing) return (
     <div className="bg-white rounded-lg shadow p-6">
       <h3 className="font-semibold text-gray-700 mb-5">Modifica — {editing.ragione_sociale}</h3>
-      <CDForm initial={editing} onSave={handleUpdate} onCancel={() => setEditing(null)} />
+      <CDForm initial={editing} onSave={handleUpdate} onCancel={() => setEditing(null)}
+        sediContent={<SediSection clienteId={editing.id} />} />
     </div>
   )
 
@@ -283,8 +460,6 @@ function ClientiDirettiTab({ canEdit }) {
               </div>
             )}
 
-            <ListinoPanel commitenteNome={selected.nome} canEdit={canEdit} />
-
             {canEdit && (
               <div className="border-t pt-3 flex gap-2">
                 <button onClick={() => setEditing(selected)}
@@ -304,202 +479,6 @@ function ClientiDirettiTab({ canEdit }) {
   )
 }
 
-// ── Gestione Listino prezzi ───────────────────────────────────────────────────
-function ListinoPanel({ commitenteNome, canEdit }) {
-  const [listini, setListini] = useState([])
-  const [selectedListino, setSelectedListino] = useState(null)
-  const [showNewListino, setShowNewListino] = useState(false)
-  const [nuovoNome, setNuovoNome] = useState('')
-  const [editingVoce, setEditingVoce] = useState(null) // {id?, descrizione, prezzo, unita_misura}
-  const [showNewVoce, setShowNewVoce] = useState(false)
-  const [newVoce, setNewVoce] = useState({ descrizione: '', prezzo: '', unita_misura: '' })
-
-  const load = () =>
-    listiniApi.list(commitenteNome).then(r => {
-      setListini(r.data)
-      if (r.data.length > 0 && !selectedListino)
-        setSelectedListino(r.data[0])
-      else if (r.data.length > 0 && selectedListino)
-        setSelectedListino(r.data.find(l => l.id === selectedListino.id) || r.data[0])
-      else
-        setSelectedListino(null)
-    })
-
-  useEffect(() => { load() }, [commitenteNome])
-
-  const inpCls = 'border border-gray-300 rounded px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-blue-400'
-
-  const handleCreateListino = async () => {
-    if (!nuovoNome.trim()) return
-    await listiniApi.create({ commitente: commitenteNome, nome: nuovoNome.trim() })
-    setNuovoNome(''); setShowNewListino(false); load()
-  }
-
-  const handleDeleteListino = async (id) => {
-    if (!confirm('Eliminare questo listino e tutte le sue voci?')) return
-    await listiniApi.delete(id)
-    load()
-  }
-
-  const handleAddVoce = async () => {
-    if (!newVoce.descrizione.trim() || !selectedListino) return
-    await listiniApi.addVoce(selectedListino.id, newVoce)
-    setNewVoce({ descrizione: '', prezzo: '', unita_misura: '' }); setShowNewVoce(false); load()
-  }
-
-  const handleUpdateVoce = async () => {
-    if (!editingVoce || !selectedListino) return
-    await listiniApi.updateVoce(selectedListino.id, editingVoce.id,
-      { descrizione: editingVoce.descrizione, prezzo: editingVoce.prezzo, unita_misura: editingVoce.unita_misura })
-    setEditingVoce(null); load()
-  }
-
-  const handleDeleteVoce = async (vid) => {
-    if (!selectedListino) return
-    await listiniApi.deleteVoce(selectedListino.id, vid); load()
-  }
-
-  return (
-    <div className="border-t pt-3 space-y-3">
-      <div className="flex items-center justify-between">
-        <div className="text-xs text-gray-400 uppercase font-semibold">Listino prezzi</div>
-        {canEdit && (
-          <button onClick={() => setShowNewListino(v => !v)}
-            className="text-xs px-2 py-0.5 bg-blue-50 text-blue-600 border border-blue-200 rounded hover:bg-blue-100">
-            + Nuovo listino
-          </button>
-        )}
-      </div>
-
-      {showNewListino && (
-        <div className="flex gap-2">
-          <input className={`${inpCls} flex-1`} placeholder="Nome listino (es. Standard 2026)"
-            value={nuovoNome} onChange={e => setNuovoNome(e.target.value)}
-            onKeyDown={e => e.key === 'Enter' && handleCreateListino()} />
-          <button onClick={handleCreateListino}
-            className="text-xs px-2 py-1 bg-blue-600 text-white rounded hover:bg-blue-700">Crea</button>
-          <button onClick={() => setShowNewListino(false)}
-            className="text-xs px-2 py-1 border border-gray-300 rounded text-gray-500">✕</button>
-        </div>
-      )}
-
-      {listini.length === 0 && !showNewListino && (
-        <p className="text-xs text-gray-400 italic">Nessun listino. Creane uno con "+ Nuovo listino".</p>
-      )}
-
-      {listini.length > 0 && (
-        <>
-          {/* Selezione listino */}
-          <div className="flex flex-wrap gap-1">
-            {listini.map(l => (
-              <button key={l.id} onClick={() => setSelectedListino(l)}
-                className={`text-xs px-2 py-0.5 rounded border transition-colors ${selectedListino?.id === l.id ? 'bg-blue-600 text-white border-blue-600' : 'border-gray-300 text-gray-600 hover:bg-gray-50'}`}>
-                {l.nome}
-              </button>
-            ))}
-          </div>
-
-          {/* Voci del listino selezionato */}
-          {selectedListino && (
-            <div className="rounded border border-gray-200 overflow-hidden">
-              <div className="flex items-center justify-between bg-gray-50 px-3 py-1.5">
-                <span className="text-xs font-medium text-gray-600">{selectedListino.nome}</span>
-                {canEdit && (
-                  <div className="flex gap-2">
-                    <button onClick={() => setShowNewVoce(v => !v)}
-                      className="text-xs text-blue-600 hover:underline">+ Voce</button>
-                    <button onClick={() => handleDeleteListino(selectedListino.id)}
-                      className="text-xs text-red-500 hover:underline">Elimina listino</button>
-                  </div>
-                )}
-              </div>
-
-              {showNewVoce && canEdit && (
-                <div className="px-3 py-2 bg-blue-50 border-b border-blue-100 flex flex-wrap gap-2 items-end">
-                  <div className="flex-1 min-w-[140px]">
-                    <div className="text-xs text-gray-500 mb-0.5">Descrizione *</div>
-                    <input className={`${inpCls} w-full`} placeholder="es. Visita tecnica"
-                      value={newVoce.descrizione} onChange={e => setNewVoce(v => ({ ...v, descrizione: e.target.value }))} />
-                  </div>
-                  <div className="w-24">
-                    <div className="text-xs text-gray-500 mb-0.5">Prezzo (€)</div>
-                    <input className={`${inpCls} w-full`} placeholder="80.00"
-                      value={newVoce.prezzo} onChange={e => setNewVoce(v => ({ ...v, prezzo: e.target.value }))} />
-                  </div>
-                  <div className="w-20">
-                    <div className="text-xs text-gray-500 mb-0.5">U.M.</div>
-                    <input className={`${inpCls} w-full`} placeholder="ora"
-                      value={newVoce.unita_misura} onChange={e => setNewVoce(v => ({ ...v, unita_misura: e.target.value }))} />
-                  </div>
-                  <button onClick={handleAddVoce}
-                    className="text-xs px-2 py-1 bg-blue-600 text-white rounded hover:bg-blue-700">Aggiungi</button>
-                  <button onClick={() => setShowNewVoce(false)}
-                    className="text-xs px-2 py-1 border border-gray-300 rounded text-gray-500">✕</button>
-                </div>
-              )}
-
-              <table className="min-w-full divide-y divide-gray-100 text-xs">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="px-3 py-1.5 text-left text-gray-500 font-semibold uppercase">Descrizione</th>
-                    <th className="px-3 py-1.5 text-right text-gray-500 font-semibold uppercase w-20">Prezzo</th>
-                    <th className="px-3 py-1.5 text-left text-gray-500 font-semibold uppercase w-16">U.M.</th>
-                    {canEdit && <th className="w-10" />}
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-100">
-                  {selectedListino.voci.length === 0 && (
-                    <tr><td colSpan={4} className="px-3 py-3 text-center text-gray-400 italic">Nessuna voce. Usa "+ Voce" per aggiungerne.</td></tr>
-                  )}
-                  {selectedListino.voci.map(v => (
-                    <tr key={v.id} className="hover:bg-gray-50">
-                      {editingVoce?.id === v.id ? (
-                        <>
-                          <td className="px-3 py-1.5">
-                            <input className={`${inpCls} w-full`} value={editingVoce.descrizione}
-                              onChange={e => setEditingVoce(ev => ({ ...ev, descrizione: e.target.value }))} />
-                          </td>
-                          <td className="px-3 py-1.5">
-                            <input className={`${inpCls} w-full text-right`} value={editingVoce.prezzo || ''}
-                              onChange={e => setEditingVoce(ev => ({ ...ev, prezzo: e.target.value }))} />
-                          </td>
-                          <td className="px-3 py-1.5">
-                            <input className={`${inpCls} w-full`} value={editingVoce.unita_misura || ''}
-                              onChange={e => setEditingVoce(ev => ({ ...ev, unita_misura: e.target.value }))} />
-                          </td>
-                          <td className="px-3 py-1.5 flex gap-1">
-                            <button onClick={handleUpdateVoce} className="text-blue-600 hover:underline">✓</button>
-                            <button onClick={() => setEditingVoce(null)} className="text-gray-400 hover:text-gray-600">✕</button>
-                          </td>
-                        </>
-                      ) : (
-                        <>
-                          <td className="px-3 py-1.5 text-gray-800">{v.descrizione}</td>
-                          <td className="px-3 py-1.5 text-right text-gray-700 font-mono">
-                            {v.prezzo ? `€ ${v.prezzo}` : '—'}
-                          </td>
-                          <td className="px-3 py-1.5 text-gray-500">{v.unita_misura || '—'}</td>
-                          {canEdit && (
-                            <td className="px-3 py-1.5">
-                              <div className="flex gap-2">
-                                <button onClick={() => setEditingVoce({ ...v })} className="text-blue-500 hover:underline">✎</button>
-                                <button onClick={() => handleDeleteVoce(v.id)} className="text-red-400 hover:text-red-600">✕</button>
-                              </div>
-                            </td>
-                          )}
-                        </>
-                      )}
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </>
-      )}
-    </div>
-  )
-}
 
 const api = {
   commitenti: {
