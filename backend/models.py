@@ -140,6 +140,10 @@ class User(Base):
     def org_giorni_grazia_rimanenti(self) -> int | None:
         return self.organizzazione.giorni_grazia_rimanenti if self.organizzazione else None
 
+    @property
+    def org_piano(self) -> str | None:
+        return self.organizzazione.piano if self.organizzazione else None
+
 
 class LookupCommitente(Base):
     __tablename__ = "lookup_commitenti"

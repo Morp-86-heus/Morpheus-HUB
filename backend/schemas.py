@@ -554,6 +554,7 @@ class UserOut(BaseModel):
     organizzazione_nome: Optional[str] = None
     org_stato_licenza: Optional[str] = None
     org_giorni_grazia_rimanenti: Optional[int] = None
+    org_piano: Optional[str] = None
     created_at: Optional[datetime] = None
 
 

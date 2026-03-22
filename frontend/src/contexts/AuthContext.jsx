@@ -113,8 +113,9 @@ export function AuthProvider({ children }) {
   const isProprietario = user?.ruolo === 'proprietario'
   const isAmministratore = user?.ruolo === 'amministratore'
 
-  // Piano e feature gating
-  const piano = activeOrg?.piano || 'enterprise'  // null = enterprise (legacy)
+  // Piano e feature gating — usa user.org_piano (sempre fresco da /api/auth/me)
+  // per il proprietario senza org usa 'enterprise' (accesso totale alla console)
+  const piano = (user?.org_piano || 'enterprise').toLowerCase()
 
   const PLAN_FEATURES = {
     base:         { magazzino: false, listini: false, calendario: false, funnel: false, servizi: false, contabilita: false },
