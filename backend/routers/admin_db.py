@@ -223,3 +223,135 @@ def db_info(db: Session = Depends(get_db), _=Depends(require_proprietario)):
         "alembic_version": alembic_version,
         "table_counts": counts,
     }
+
+
+# ── System Stats (dashboard proprietario) ────────────────────────────────────
+
+@router.get("/system-stats")
+def system_stats(db: Session = Depends(get_db), _=Depends(require_proprietario)):
+    """KPI di sistema per la dashboard del proprietario."""
+
+    # ── Organizzazioni ────────────────────────────────────────────────────────
+    org_rows = db.execute(text("""
+        SELECT
+            o.id,
+            o.nome,
+            o.piano,
+            o.licenza_attiva,
+            o.trial_attivato,
+            o.trial_scadenza,
+            o.licenza_scadenza,
+            COUNT(DISTINCT u.id) FILTER (WHERE u.attivo = true) AS utenti_attivi,
+            COUNT(DISTINCT t.id) AS ticket_totali,
+            COUNT(DISTINCT t.id) FILTER (WHERE t.stato NOT IN ('Chiusa','Annullata')) AS ticket_aperti
+        FROM organizzazioni o
+        LEFT JOIN users u ON u.organizzazione_id = o.id
+        LEFT JOIN tickets t ON t.organizzazione_id = o.id
+        GROUP BY o.id
+        ORDER BY o.nome
+    """)).fetchall()
+
+    now = datetime.utcnow()
+
+    orgs = []
+    piani_count = {"base": 0, "professional": 0, "enterprise": 0, "trial": 0, "nessuna": 0}
+    licenze_attive = 0
+    licenze_trial = 0
+    licenze_scadenza_presto = []   # scadono entro 30 giorni
+    licenze_scadute = []
+
+    for r in org_rows:
+        piano = r.piano or "nessuna"
+
+        # stato licenza
+        if r.licenza_attiva:
+            stato = "attiva"
+            licenze_attive += 1
+            piani_count[piano if piano in piani_count else "nessuna"] += 1
+            if r.licenza_scadenza:
+                days = (r.licenza_scadenza - now).days
+                if days < 0:
+                    stato = "scaduta"
+                    licenze_scadute.append({"id": r.id, "nome": r.nome, "giorni": days})
+                elif days <= 30:
+                    licenze_scadenza_presto.append({"id": r.id, "nome": r.nome, "giorni": days})
+        elif r.trial_attivato and r.trial_scadenza:
+            if r.trial_scadenza < now:
+                stato = "trial_scaduto"
+            else:
+                stato = "trial"
+                licenze_trial += 1
+                piani_count["trial"] += 1
+        else:
+            stato = "nessuna"
+            piani_count["nessuna"] += 1
+
+        orgs.append({
+            "id": r.id,
+            "nome": r.nome,
+            "piano": piano,
+            "stato": stato,
+            "utenti_attivi": r.utenti_attivi or 0,
+            "ticket_totali": r.ticket_totali or 0,
+            "ticket_aperti": r.ticket_aperti or 0,
+            "licenza_scadenza": r.licenza_scadenza.isoformat() if r.licenza_scadenza else None,
+        })
+
+    # ── Utenti totali nel sistema ─────────────────────────────────────────────
+    utenti_row = db.execute(text(
+        "SELECT COUNT(*) FROM users WHERE attivo = true AND ruolo != 'proprietario'"
+    )).fetchone()
+    utenti_totali = utenti_row[0] if utenti_row else 0
+
+    # ── Ticket totali nel sistema ─────────────────────────────────────────────
+    ticket_row = db.execute(text("SELECT COUNT(*) FROM tickets")).fetchone()
+    ticket_totali = ticket_row[0] if ticket_row else 0
+
+    ticket_aperti_row = db.execute(text(
+        "SELECT COUNT(*) FROM tickets WHERE stato NOT IN ('Chiusa','Annullata')"
+    )).fetchone()
+    ticket_aperti = ticket_aperti_row[0] if ticket_aperti_row else 0
+
+    # ── DB info ───────────────────────────────────────────────────────────────
+    size_row = db.execute(text(
+        "SELECT pg_size_pretty(pg_database_size(current_database()))"
+    )).fetchone()
+
+    try:
+        alembic_row = db.execute(text("SELECT version_num FROM alembic_version LIMIT 1")).fetchone()
+        alembic_version = alembic_row[0] if alembic_row else "N/A"
+    except Exception:
+        alembic_version = "N/A"
+
+    # Uptime postgres (approssimato da pg_postmaster_start_time)
+    try:
+        uptime_row = db.execute(text(
+            "SELECT now() - pg_postmaster_start_time()"
+        )).fetchone()
+        uptime_str = str(uptime_row[0]).split(".")[0] if uptime_row else "N/A"
+    except Exception:
+        uptime_str = "N/A"
+
+    return {
+        "organizzazioni": {
+            "totale": len(orgs),
+            "licenze_attive": licenze_attive,
+            "licenze_trial": licenze_trial,
+            "scadenza_presto": licenze_scadenza_presto,
+            "scadute": licenze_scadute,
+            "per_piano": piani_count,
+        },
+        "utenti": {
+            "totale_attivi": utenti_totali,
+        },
+        "tickets": {
+            "totale": ticket_totali,
+            "aperti": ticket_aperti,
+        },
+        "database": {
+            "size": size_row[0] if size_row else "N/A",
+            "alembic_version": alembic_version,
+            "uptime": uptime_str,
+        },
+        "orgs_detail": orgs,
+    }

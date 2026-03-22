@@ -251,7 +251,8 @@ export default function Sidebar() {
 
   // Nav items per la console proprietario (senza activeOrg)
   const adminNavItems = [
-    { to: '/organizzazioni', icon: <Icon name="orgs" />, label: 'Organizzazioni', exact: true },
+    { to: '/', icon: <Icon name="dashboard" />, label: 'Dashboard', exact: true },
+    { to: '/organizzazioni', icon: <Icon name="orgs" />, label: 'Organizzazioni' },
     { to: '/contabilita', icon: <Icon name="contabilita" />, label: 'Contabilità' },
   ]
 

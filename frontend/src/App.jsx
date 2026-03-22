@@ -31,6 +31,7 @@ import ResetPasswordPage from './pages/ResetPasswordPage'
 import EmailSistemaPage from './pages/EmailSistemaPage'
 import PrivacyPolicyPage from './pages/PrivacyPolicyPage'
 import CookiePolicyPage from './pages/CookiePolicyPage'
+import ProprietarioDashboardPage from './pages/ProprietarioDashboardPage'
 
 function AuthErrorToast() {
   const [messages, setMessages] = useState([])
@@ -143,13 +144,14 @@ function AppRoutes() {
         <main className="flex-1 overflow-y-auto">
           <div className="md:hidden h-14" />
           <Routes>
+            <Route path="/" element={<ProprietarioDashboardPage />} />
             <Route path="/organizzazioni" element={<OrganizzazioniPage />} />
             <Route path="/contabilita" element={<ContabilitaPage />} />
             <Route path="/email-sistema" element={<EmailSistemaPage />} />
             <Route path="/profile" element={<ProfilePage />} />
             <Route path="/organizzazioni/:orgId/anagrafica" element={<OrgAnagraficaPage />} />
             <Route path="/admin/database" element={<AdminDatabasePage />} />
-            <Route path="*" element={<Navigate to="/organizzazioni" replace />} />
+            <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </main>
       </div>
