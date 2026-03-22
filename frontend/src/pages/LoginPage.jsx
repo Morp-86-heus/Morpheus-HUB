@@ -59,17 +59,14 @@ export default function LoginPage() {
           </div>
 
           <label className="flex items-center gap-2.5 cursor-pointer select-none group">
-            <div
-              onClick={() => setRememberMe(v => !v)}
-              className={`w-4 h-4 rounded flex items-center justify-center border transition-colors flex-shrink-0 ${rememberMe ? 'bg-blue-600 border-blue-600' : 'border-gray-300 bg-white group-hover:border-blue-400'}`}
-            >
+            <input type="checkbox" className="sr-only" checked={rememberMe} onChange={e => setRememberMe(e.target.checked)} />
+            <div className={`w-4 h-4 rounded flex items-center justify-center border transition-colors flex-shrink-0 ${rememberMe ? 'bg-blue-600 border-blue-600' : 'border-gray-300 bg-white group-hover:border-blue-400'}`}>
               {rememberMe && (
                 <svg className="w-2.5 h-2.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
                 </svg>
               )}
             </div>
-            <input type="checkbox" className="sr-only" checked={rememberMe} onChange={e => setRememberMe(e.target.checked)} />
             <span className="text-xs text-gray-500">Resta connesso</span>
           </label>
 
