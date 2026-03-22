@@ -5,7 +5,9 @@ const AuthContext = createContext(null)
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null)
-  const [token, setToken] = useState(() => localStorage.getItem('token'))
+  const [token, setToken] = useState(() =>
+    localStorage.getItem('token') || sessionStorage.getItem('token')
+  )
   const [activeOrg, setActiveOrgState] = useState(() => {
     const stored = localStorage.getItem('activeOrg')
     return stored ? JSON.parse(stored) : null
@@ -46,7 +48,7 @@ export function AuthProvider({ children }) {
         setUser(r.data)
         await fetchPermissions(r.data.ruolo)
       })
-      .catch(() => { localStorage.removeItem('token'); setToken(null) })
+      .catch(() => { localStorage.removeItem('token'); sessionStorage.removeItem('token'); setToken(null) })
       .finally(() => setLoading(false))
   }, [])  // eslint-disable-line
 
@@ -59,10 +61,16 @@ export function AuthProvider({ children }) {
     await fetchPermissions(user.ruolo)
   }, [user, fetchPermissions])
 
-  const login = useCallback(async (email, password) => {
-    const res = await axios.post('/api/auth/login', { email, password })
+  const login = useCallback(async (email, password, rememberMe = false) => {
+    const res = await axios.post('/api/auth/login', { email, password, remember_me: rememberMe })
     const { access_token, user } = res.data
-    localStorage.setItem('token', access_token)
+    if (rememberMe) {
+      localStorage.setItem('token', access_token)
+      sessionStorage.removeItem('token')
+    } else {
+      sessionStorage.setItem('token', access_token)
+      localStorage.removeItem('token')
+    }
     setToken(access_token)
     axios.defaults.headers.common['Authorization'] = `Bearer ${access_token}`
     setUser(user)
@@ -72,6 +80,7 @@ export function AuthProvider({ children }) {
 
   const logout = useCallback(() => {
     localStorage.removeItem('token')
+    sessionStorage.removeItem('token')
     localStorage.removeItem('activeOrg')
     localStorage.removeItem('activeOrgId')
     setToken(null)

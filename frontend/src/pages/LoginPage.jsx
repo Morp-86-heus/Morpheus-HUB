@@ -5,6 +5,7 @@ export default function LoginPage() {
   const { login } = useAuth()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [rememberMe, setRememberMe] = useState(false)
   const [error, setError] = useState(null)
   const [loading, setLoading] = useState(false)
 
@@ -13,7 +14,7 @@ export default function LoginPage() {
     setError(null)
     setLoading(true)
     try {
-      await login(email, password)
+      await login(email, password, rememberMe)
     } catch (err) {
       setError(err.response?.data?.detail || 'Credenziali non valide')
     } finally {
@@ -56,6 +57,21 @@ export default function LoginPage() {
               required
             />
           </div>
+
+          <label className="flex items-center gap-2.5 cursor-pointer select-none group">
+            <div
+              onClick={() => setRememberMe(v => !v)}
+              className={`w-4 h-4 rounded flex items-center justify-center border transition-colors flex-shrink-0 ${rememberMe ? 'bg-blue-600 border-blue-600' : 'border-gray-300 bg-white group-hover:border-blue-400'}`}
+            >
+              {rememberMe && (
+                <svg className="w-2.5 h-2.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                </svg>
+              )}
+            </div>
+            <input type="checkbox" className="sr-only" checked={rememberMe} onChange={e => setRememberMe(e.target.checked)} />
+            <span className="text-xs text-gray-500">Resta connesso</span>
+          </label>
 
           {error && (
             <div className="bg-red-50 border border-red-100 text-red-600 text-sm px-4 py-3 rounded-xl flex items-center gap-2">

@@ -27,7 +27,7 @@ def login(req: schemas.LoginRequest, db: Session = Depends(get_db)):
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Credenziali non valide")
     if not user.attivo:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Account disabilitato")
-    token = create_access_token(user.id, user.email, user.ruolo.value)
+    token = create_access_token(user.id, user.email, user.ruolo.value, remember_me=req.remember_me)
     return {"access_token": token, "token_type": "bearer", "user": user}
 
 

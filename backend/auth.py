@@ -12,6 +12,7 @@ from models import User, Organizzazione, RuoloEnum
 SECRET_KEY = os.getenv("SECRET_KEY", "changeme-use-a-long-random-string-in-production")
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_HOURS = 12
+REMEMBER_ME_EXPIRE_DAYS = 30
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 bearer_scheme = HTTPBearer(auto_error=False)
@@ -25,8 +26,11 @@ def verify_password(plain: str, hashed: str) -> bool:
     return pwd_context.verify(plain, hashed)
 
 
-def create_access_token(user_id: int, email: str, ruolo: str) -> str:
-    expire = datetime.now(timezone.utc) + timedelta(hours=ACCESS_TOKEN_EXPIRE_HOURS)
+def create_access_token(user_id: int, email: str, ruolo: str, remember_me: bool = False) -> str:
+    if remember_me:
+        expire = datetime.now(timezone.utc) + timedelta(days=REMEMBER_ME_EXPIRE_DAYS)
+    else:
+        expire = datetime.now(timezone.utc) + timedelta(hours=ACCESS_TOKEN_EXPIRE_HOURS)
     payload = {"sub": str(user_id), "email": email, "ruolo": ruolo, "exp": expire}
     return jwt.encode(payload, SECRET_KEY, algorithm=ALGORITHM)
 
