@@ -1,6 +1,8 @@
 import { useState, useEffect, useCallback } from 'react'
 import { clientiDirettiApi } from '../api/client'
 import axios from 'axios'
+import { useAuth } from '../contexts/AuthContext'
+import ClienteDirettoDetail from '../components/ClienteDirettoDetail'
 
 // ── Costanti ──────────────────────────────────────────────────────────────────
 
@@ -209,13 +211,16 @@ function SediTab({ clienteId }) {
 // ── Pagina principale ─────────────────────────────────────────────────────────
 
 export default function ClientiDirettiPage() {
+  const { can } = useAuth()
   const [clienti, setClienti] = useState([])
   const [search, setSearch] = useState('')
+  const [selected, setSelected] = useState(null)
   const [showForm, setShowForm] = useState(false)
   const [editing, setEditing] = useState(null)
   const [form, setForm] = useState(emptyForm)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState(null)
+  const canEdit = can('anagrafiche.edit') || can('anagrafiche.create')
 
   const load = () =>
     clientiDirettiApi.list(search ? { search } : {}).then(r => setClienti(r.data))
@@ -292,7 +297,8 @@ export default function ClientiDirettiPage() {
               <tr><td colSpan={6} className="px-5 py-12 text-center text-sm text-gray-400">Nessun cliente trovato</td></tr>
             )}
             {clienti.map(c => (
-              <tr key={c.id} className="hover:bg-blue-50/30 transition-colors">
+              <tr key={c.id} onClick={() => setSelected(c)}
+                className={`cursor-pointer transition-colors ${selected?.id === c.id ? 'bg-blue-50/50' : 'hover:bg-blue-50/30'}`}>
                 <td className="px-5 py-3 font-medium text-gray-900">
                   {c.ragione_sociale}
                   {c.sedi?.length > 0 && (
@@ -311,14 +317,29 @@ export default function ClientiDirettiPage() {
                   <div className="text-xs text-blue-500">{c.email || ''}</div>
                 </td>
                 <td className="px-5 py-3 text-right">
-                  <button onClick={() => openEdit(c)} className="text-xs font-medium text-blue-600 hover:text-blue-800 mr-3">Modifica</button>
-                  <button onClick={() => handleDelete(c.id)} className="text-xs font-medium text-red-500 hover:text-red-700">Elimina</button>
+                  <svg className="inline w-4 h-4 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                  </svg>
                 </td>
               </tr>
             ))}
           </tbody>
         </table>
       </div>
+
+      {selected && (
+        <ClienteDirettoDetail
+          cliente={selected}
+          canEdit={canEdit}
+          onClose={() => setSelected(null)}
+          onModifica={(c) => { setSelected(null); openEdit(c) }}
+          onDelete={async (id) => {
+            if (!confirm('Eliminare questo cliente e tutte le sue sedi?')) return
+            await clientiDirettiApi.delete(id)
+            setSelected(null); load()
+          }}
+        />
+      )}
 
       {/* Modal */}
       {showForm && (

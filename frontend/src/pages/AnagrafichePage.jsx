@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import axios from 'axios'
 import { useAuth } from '../contexts/AuthContext'
+import ClienteDirettoDetail from '../components/ClienteDirettoDetail'
 
 
 // ── Clienti Diretti ──────────────────────────────────────────────────────────
@@ -373,108 +374,49 @@ function ClientiDirettiTab({ canEdit }) {
         <span className="text-sm text-gray-400 whitespace-nowrap">{items.length} clienti</span>
       </div>
 
-      {/* Lista + dettaglio affiancato */}
-      <div className={`grid gap-4 ${selected ? 'grid-cols-1 md:grid-cols-2' : 'grid-cols-1'}`}>
-        {/* Lista */}
-        <div className="bg-white rounded-lg shadow overflow-hidden">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-4 py-2.5 text-left text-xs font-semibold text-gray-500 uppercase">Ragione Sociale</th>
-                <th className="px-4 py-2.5 text-left text-xs font-semibold text-gray-500 uppercase">Città</th>
-                <th className="px-4 py-2.5 text-left text-xs font-semibold text-gray-500 uppercase">Referente</th>
-                <th className="px-4 py-2.5 text-left text-xs font-semibold text-gray-500 uppercase">Telefono</th>
+      <div className="bg-white rounded-lg shadow overflow-hidden">
+        <table className="min-w-full divide-y divide-gray-200">
+          <thead className="bg-gray-50">
+            <tr>
+              <th className="px-4 py-2.5 text-left text-xs font-semibold text-gray-500 uppercase">Ragione Sociale</th>
+              <th className="px-4 py-2.5 text-left text-xs font-semibold text-gray-500 uppercase">Città</th>
+              <th className="px-4 py-2.5 text-left text-xs font-semibold text-gray-500 uppercase">Referente</th>
+              <th className="px-4 py-2.5 text-left text-xs font-semibold text-gray-500 uppercase">Telefono</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-gray-100">
+            {items.length === 0 && (
+              <tr><td colSpan={4} className="px-4 py-8 text-center text-gray-400 text-sm">Nessun cliente trovato</td></tr>
+            )}
+            {items.map(item => (
+              <tr
+                key={item.id}
+                onClick={() => setSelected(item)}
+                className={`cursor-pointer transition-colors ${selected?.id === item.id ? 'bg-blue-50' : 'hover:bg-gray-50'}`}
+              >
+                <td className="px-4 py-3 text-sm font-medium text-gray-800">{item.ragione_sociale}</td>
+                <td className="px-4 py-3 text-sm text-gray-500">{[item.citta, item.provincia].filter(Boolean).join(' (') + (item.provincia ? ')' : '')}</td>
+                <td className="px-4 py-3 text-sm text-gray-500">{item.referente_nome || '—'}</td>
+                <td className="px-4 py-3 text-sm text-gray-500">{item.telefono || '—'}</td>
               </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100">
-              {items.length === 0 && (
-                <tr><td colSpan={4} className="px-4 py-8 text-center text-gray-400 text-sm">Nessun cliente trovato</td></tr>
-              )}
-              {items.map(item => (
-                <tr
-                  key={item.id}
-                  onClick={() => setSelected(selected?.id === item.id ? null : item)}
-                  className={`cursor-pointer transition-colors ${selected?.id === item.id ? 'bg-blue-50' : 'hover:bg-gray-50'}`}
-                >
-                  <td className="px-4 py-3 text-sm font-medium text-gray-800">{item.ragione_sociale}</td>
-                  <td className="px-4 py-3 text-sm text-gray-500">{[item.citta, item.provincia].filter(Boolean).join(' (') + (item.provincia ? ')' : '')}</td>
-                  <td className="px-4 py-3 text-sm text-gray-500">{item.referente_nome || '—'}</td>
-                  <td className="px-4 py-3 text-sm text-gray-500">{item.telefono || '—'}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-
-        {/* Pannello dettaglio */}
-        {selected && (
-          <div className="bg-white rounded-lg shadow p-5 space-y-4 text-sm">
-            <div className="flex items-start justify-between">
-              <div>
-                <h3 className="font-bold text-gray-800 text-base">{selected.ragione_sociale}</h3>
-                {selected.sito_web && <a href={selected.sito_web} target="_blank" rel="noreferrer" className="text-blue-500 text-xs hover:underline">{selected.sito_web}</a>}
-              </div>
-              <button onClick={() => setSelected(null)} className="text-gray-400 hover:text-gray-600 text-lg leading-none">✕</button>
-            </div>
-
-            {/* Dati fiscali */}
-            <div className="grid grid-cols-2 gap-2">
-              {[['P.IVA', selected.partita_iva], ['C.F.', selected.codice_fiscale]].map(([l, v]) => v ? (
-                <div key={l}><span className="text-gray-400">{l}: </span><span className="font-mono">{v}</span></div>
-              ) : null)}
-            </div>
-
-            {/* Sede */}
-            {(selected.via || selected.citta) && (
-              <div className="border-t pt-3">
-                <div className="text-xs text-gray-400 uppercase font-semibold mb-1">Sede legale</div>
-                <div>{[selected.via, selected.civico].filter(Boolean).join(' ')}</div>
-                <div>{[selected.cap, selected.citta, selected.provincia ? `(${selected.provincia})` : null].filter(Boolean).join(' ')}</div>
-                {selected.regione && <div className="text-gray-400">{selected.regione}</div>}
-              </div>
-            )}
-
-            {/* Contatti */}
-            <div className="border-t pt-3 space-y-1">
-              <div className="text-xs text-gray-400 uppercase font-semibold mb-1">Contatti</div>
-              {selected.telefono && <div>📞 <a href={`tel:${selected.telefono}`} className="text-blue-600 hover:underline">{selected.telefono}</a></div>}
-              {selected.email && <div>✉️ <a href={`mailto:${selected.email}`} className="text-blue-600 hover:underline">{selected.email}</a></div>}
-              {selected.pec && <div>📧 PEC: <a href={`mailto:${selected.pec}`} className="text-blue-600 hover:underline">{selected.pec}</a></div>}
-            </div>
-
-            {/* Referente */}
-            {selected.referente_nome && (
-              <div className="border-t pt-3 space-y-1">
-                <div className="text-xs text-gray-400 uppercase font-semibold mb-1">Referente</div>
-                <div className="font-medium">{selected.referente_nome}{selected.referente_ruolo ? ` — ${selected.referente_ruolo}` : ''}</div>
-                {selected.referente_telefono && <div>📞 <a href={`tel:${selected.referente_telefono}`} className="text-blue-600 hover:underline">{selected.referente_telefono}</a></div>}
-                {selected.referente_email && <div>✉️ <a href={`mailto:${selected.referente_email}`} className="text-blue-600 hover:underline">{selected.referente_email}</a></div>}
-              </div>
-            )}
-
-            {/* Note */}
-            {selected.note && (
-              <div className="border-t pt-3">
-                <div className="text-xs text-gray-400 uppercase font-semibold mb-1">Note</div>
-                <div className="text-gray-600 whitespace-pre-wrap">{selected.note}</div>
-              </div>
-            )}
-
-            {canEdit && (
-              <div className="border-t pt-3 flex gap-2">
-                <button onClick={() => setEditing(selected)}
-                  className="flex-1 bg-blue-600 text-white rounded px-3 py-1.5 text-xs font-medium hover:bg-blue-700">
-                  Modifica
-                </button>
-                <button onClick={() => handleDelete(selected.id)}
-                  className="px-3 py-1.5 text-xs text-red-500 border border-red-200 rounded hover:bg-red-50">
-                  Elimina
-                </button>
-              </div>
-            )}
-          </div>
-        )}
+            ))}
+          </tbody>
+        </table>
       </div>
+
+      {selected && (
+        <ClienteDirettoDetail
+          cliente={selected}
+          canEdit={canEdit}
+          onClose={() => setSelected(null)}
+          onModifica={(c) => { setSelected(null); setEditing(c) }}
+          onDelete={async (id) => {
+            if (!confirm('Eliminare questo cliente diretto?')) return
+            await axios.delete(`/api/clienti-diretti/${id}`)
+            setSelected(null); load()
+          }}
+        />
+      )}
     </div>
   )
 }
