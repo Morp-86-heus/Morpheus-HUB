@@ -25,7 +25,7 @@ services:
     environment:
       DATABASE_URL: postgresql://tickets:tickets@db:5432/tickets
       SECRET_KEY: cambia-questa-chiave-segreta-in-produzione-con-stringa-lunga
-      FRONTEND_URL: https://morpheushub.cloud
+      FRONTEND_URL: https://app.morpheushub.cloud
     depends_on:
       db:
         condition: service_healthy
