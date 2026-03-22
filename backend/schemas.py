@@ -304,6 +304,31 @@ class TrendMensile(BaseModel):
     totale: int
 
 
+# SedeClienteDiretto schemas
+class SedeClienteDirettoBase(BaseModel):
+    nome: Optional[str] = None
+    via: Optional[str] = None
+    civico: Optional[str] = None
+    cap: Optional[str] = None
+    citta: Optional[str] = None
+    provincia: Optional[str] = None
+    telefono: Optional[str] = None
+    referente_nome: Optional[str] = None
+    referente_telefono: Optional[str] = None
+    referente_email: Optional[str] = None
+    note: Optional[str] = None
+
+class SedeClienteDirettoCreate(SedeClienteDirettoBase):
+    pass
+
+class SedeClienteDirettoUpdate(SedeClienteDirettoBase):
+    pass
+
+class SedeClienteDirettoOut(SedeClienteDirettoBase):
+    model_config = ConfigDict(from_attributes=True)
+    id: int
+
+
 # ClienteDiretto schemas
 class ClienteDirettoBase(BaseModel):
     ragione_sociale: str
@@ -339,6 +364,7 @@ class ClienteDirettoOut(ClienteDirettoBase):
     id: int
     created_at: Optional[datetime] = None
     updated_at: Optional[datetime] = None
+    sedi: List['SedeClienteDirettoOut'] = []
 
 
 class TicketOutWithChiusura(TicketOut):

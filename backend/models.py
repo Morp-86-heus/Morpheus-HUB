@@ -224,6 +224,29 @@ class ClienteDiretto(Base):
     updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())
 
     contratti = relationship("ContrattoServizio", back_populates="cliente")
+    sedi = relationship("SedeClienteDiretto", back_populates="cliente",
+                        cascade="all, delete-orphan", order_by="SedeClienteDiretto.id")
+
+
+class SedeClienteDiretto(Base):
+    __tablename__ = "clienti_diretti_sedi"
+
+    id = Column(Integer, primary_key=True, index=True)
+    cliente_id = Column(Integer, ForeignKey("clienti_diretti.id", ondelete="CASCADE"), nullable=False, index=True)
+    organizzazione_id = Column(Integer, ForeignKey("organizzazioni.id"), nullable=True, index=True)
+    nome = Column(String(200), nullable=True)          # es. "Sede Roma", "Magazzino"
+    via = Column(String(200), nullable=True)
+    civico = Column(String(10), nullable=True)
+    cap = Column(String(10), nullable=True)
+    citta = Column(String(100), nullable=True)
+    provincia = Column(String(5), nullable=True)
+    telefono = Column(String(50), nullable=True)
+    referente_nome = Column(String(200), nullable=True)
+    referente_telefono = Column(String(50), nullable=True)
+    referente_email = Column(String(200), nullable=True)
+    note = Column(Text, nullable=True)
+
+    cliente = relationship("ClienteDiretto", back_populates="sedi")
 
 
 class Ticket(Base):

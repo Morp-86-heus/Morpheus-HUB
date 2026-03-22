@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import or_
 from typing import List, Optional
 from database import get_db
-from models import ClienteDiretto, User, RuoloEnum
+from models import ClienteDiretto, SedeClienteDiretto, User, RuoloEnum
 from auth import get_current_user, require_roles, get_active_org_id
 import schemas
 
@@ -89,4 +89,76 @@ def delete_cliente_diretto(
     if not obj:
         raise HTTPException(status_code=404, detail="Cliente non trovato")
     db.delete(obj)
+    db.commit()
+
+
+# ── Sedi aggiuntive ────────────────────────────────────────────────────────────
+
+def _get_cliente(cid: int, org_id: int, db: Session) -> ClienteDiretto:
+    obj = db.query(ClienteDiretto).filter_by(id=cid, organizzazione_id=org_id).first()
+    if not obj:
+        raise HTTPException(status_code=404, detail="Cliente non trovato")
+    return obj
+
+
+@router.get("/{cid}/sedi", response_model=List[schemas.SedeClienteDirettoOut])
+def list_sedi(
+    cid: int,
+    db: Session = Depends(get_db),
+    _: User = Depends(_any),
+    org_id: int = Depends(get_active_org_id),
+):
+    _get_cliente(cid, org_id, db)
+    return db.query(SedeClienteDiretto).filter_by(cliente_id=cid).order_by(SedeClienteDiretto.id).all()
+
+
+@router.post("/{cid}/sedi", response_model=schemas.SedeClienteDirettoOut, status_code=201)
+def create_sede(
+    cid: int,
+    body: schemas.SedeClienteDirettoCreate,
+    db: Session = Depends(get_db),
+    _: User = Depends(_admin),
+    org_id: int = Depends(get_active_org_id),
+):
+    _get_cliente(cid, org_id, db)
+    sede = SedeClienteDiretto(**body.model_dump(), cliente_id=cid, organizzazione_id=org_id)
+    db.add(sede)
+    db.commit()
+    db.refresh(sede)
+    return sede
+
+
+@router.put("/{cid}/sedi/{sid}", response_model=schemas.SedeClienteDirettoOut)
+def update_sede(
+    cid: int,
+    sid: int,
+    body: schemas.SedeClienteDirettoUpdate,
+    db: Session = Depends(get_db),
+    _: User = Depends(_admin),
+    org_id: int = Depends(get_active_org_id),
+):
+    _get_cliente(cid, org_id, db)
+    sede = db.query(SedeClienteDiretto).filter_by(id=sid, cliente_id=cid).first()
+    if not sede:
+        raise HTTPException(status_code=404, detail="Sede non trovata")
+    for k, v in body.model_dump(exclude_unset=True).items():
+        setattr(sede, k, v)
+    db.commit()
+    db.refresh(sede)
+    return sede
+
+
+@router.delete("/{cid}/sedi/{sid}", status_code=204)
+def delete_sede(
+    cid: int,
+    sid: int,
+    db: Session = Depends(get_db),
+    _: User = Depends(_admin),
+    org_id: int = Depends(get_active_org_id),
+):
+    _get_cliente(cid, org_id, db)
+    sede = db.query(SedeClienteDiretto).filter_by(id=sid, cliente_id=cid).first()
+    if not sede:
+        raise HTTPException(status_code=404, detail="Sede non trovata")
+    db.delete(sede)
     db.commit()
