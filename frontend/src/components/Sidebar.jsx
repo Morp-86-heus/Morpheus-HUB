@@ -246,8 +246,6 @@ export default function Sidebar() {
   const adminNavItems = [
     { to: '/organizzazioni', icon: <Icon name="orgs" />, label: 'Organizzazioni', exact: true },
     { to: '/contabilita', icon: <Icon name="contabilita" />, label: 'Contabilità' },
-    { to: '/email-sistema', icon: <Icon name="email" />, label: 'Email sistema' },
-    { to: '/admin/database', icon: <Icon name="database" />, label: 'Database' },
   ]
 
   const orgNavItems = [
@@ -369,8 +367,20 @@ export default function Sidebar() {
         {!(isProprietario && !activeOrg) && (
           <NavItem to="/calendario" icon={<Icon name="calendario" />} label="Calendario" collapsed={collapsed} onClick={onNav} />
         )}
-        {/* Gruppo Amministrazione (solo per amministratori e proprietari) */}
-        {(isProprietario && !activeOrg) ? null : showAmministrazione && (
+        {/* Gruppo Amministrazione — console proprietario (senza org) */}
+        {isProprietario && !activeOrg && (
+          <NavGroup
+            icon={<Icon name="admin" />}
+            label="Amministrazione"
+            collapsed={collapsed}
+            matchPaths={['/email-sistema', '/admin/database']}
+          >
+            <NavItem to="/email-sistema" icon={<Icon name="email" />} label="Email sistema" collapsed={collapsed} onClick={onNav} indent />
+            <NavItem to="/admin/database" icon={<Icon name="database" />} label="Database" collapsed={collapsed} onClick={onNav} indent />
+          </NavGroup>
+        )}
+        {/* Gruppo Amministrazione — org attiva (amministratore e proprietario) */}
+        {!(isProprietario && !activeOrg) && showAmministrazione && (
           <NavGroup
             icon={<Icon name="admin" />}
             label="Amministrazione"
