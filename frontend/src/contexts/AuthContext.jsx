@@ -93,7 +93,7 @@ export function AuthProvider({ children }) {
 
   const setActiveOrg = useCallback((org) => {
     if (org) {
-      const orgData = { id: org.id, nome: org.nome }
+      const orgData = { id: org.id, nome: org.nome, piano: org.piano ?? null }
       localStorage.setItem('activeOrg', JSON.stringify(orgData))
       localStorage.setItem('activeOrgId', String(org.id))
       axios.defaults.headers.common['X-Organization-Id'] = String(org.id)
@@ -112,6 +112,20 @@ export function AuthProvider({ children }) {
 
   const isProprietario = user?.ruolo === 'proprietario'
   const isAmministratore = user?.ruolo === 'amministratore'
+
+  // Piano e feature gating
+  const piano = activeOrg?.piano || 'enterprise'  // null = enterprise (legacy)
+
+  const PLAN_FEATURES = {
+    base:         { magazzino: false, listini: false, calendario: false, funnel: false, servizi: false, contabilita: false },
+    professional: { magazzino: true,  listini: true,  calendario: true,  funnel: true,  servizi: true,  contabilita: false },
+    enterprise:   { magazzino: true,  listini: true,  calendario: true,  funnel: true,  servizi: true,  contabilita: true  },
+  }
+
+  const hasFeature = useCallback((feature) => {
+    const p = (piano || 'enterprise').toLowerCase()
+    return PLAN_FEATURES[p]?.[feature] ?? true
+  }, [piano])  // eslint-disable-line
 
   // Mapping nomi legacy → codici permesso nuovi
   const LEGACY = {
@@ -138,6 +152,7 @@ export function AuthProvider({ children }) {
       activeOrg, setActiveOrg, clearActiveOrg,
       isProprietario, isAmministratore,
       permissions,
+      piano, hasFeature,
       login, logout, can, refreshUser, refreshPermissions,
     }}>
       {children}

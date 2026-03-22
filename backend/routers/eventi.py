@@ -5,8 +5,9 @@ from sqlalchemy.orm import Session
 from sqlalchemy import or_
 
 from database import get_db
-from models import Evento, User, RuoloEnum
+from models import Evento, Organizzazione, User, RuoloEnum
 from auth import get_current_user, require_roles, get_active_org_id
+from utils.plan import check_feature
 import schemas
 
 router = APIRouter(prefix="/api/eventi", tags=["eventi"])
@@ -45,6 +46,8 @@ def create_evento(
     current_user: User = Depends(_tutti),
     org_id: int = Depends(get_active_org_id),
 ):
+    org = db.query(Organizzazione).filter_by(id=org_id).first()
+    check_feature(org, 'calendario')
     ev = Evento(
         **body.model_dump(),
         organizzazione_id=org_id,
@@ -64,6 +67,8 @@ def update_evento(
     current_user: User = Depends(_tutti),
     org_id: int = Depends(get_active_org_id),
 ):
+    org = db.query(Organizzazione).filter_by(id=org_id).first()
+    check_feature(org, 'calendario')
     ev = db.query(Evento).filter(
         Evento.id == evento_id,
         Evento.organizzazione_id == org_id,
@@ -90,6 +95,8 @@ def delete_evento(
     current_user: User = Depends(_tutti),
     org_id: int = Depends(get_active_org_id),
 ):
+    org = db.query(Organizzazione).filter_by(id=org_id).first()
+    check_feature(org, 'calendario')
     ev = db.query(Evento).filter(
         Evento.id == evento_id,
         Evento.organizzazione_id == org_id,

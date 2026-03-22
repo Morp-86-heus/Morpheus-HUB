@@ -10,6 +10,7 @@ from sqlalchemy.exc import IntegrityError
 from database import get_db
 from models import Fattura, FatturaVoce, Pagamento, Organizzazione, User
 from auth import require_proprietario, get_current_user
+from utils.plan import check_feature
 
 router = APIRouter(prefix="/api/contabilita", tags=["contabilita"])
 
@@ -219,6 +220,10 @@ def create_fattura(
     db: Session = Depends(get_db),
     _: User = Depends(_prop),
 ):
+    if payload.organizzazione_id:
+        org = db.query(Organizzazione).filter_by(id=payload.organizzazione_id).first()
+        if org:
+            check_feature(org, 'contabilita')
     for attempt in range(2):
         numero = _next_numero(db)
         fattura = Fattura(
@@ -280,6 +285,10 @@ def update_fattura(
     ).filter(Fattura.id == fattura_id).first()
     if not f:
         raise HTTPException(status_code=404, detail="Fattura non trovata")
+    if f.organizzazione_id:
+        org = db.query(Organizzazione).filter_by(id=f.organizzazione_id).first()
+        if org:
+            check_feature(org, 'contabilita')
     _guard_modificabile(f)
     for k, v in payload.model_dump(exclude_unset=True).items():
         setattr(f, k, v)
@@ -297,6 +306,10 @@ def delete_fattura(
     f = db.query(Fattura).filter(Fattura.id == fattura_id).first()
     if not f:
         raise HTTPException(status_code=404, detail="Fattura non trovata")
+    if f.organizzazione_id:
+        org = db.query(Organizzazione).filter_by(id=f.organizzazione_id).first()
+        if org:
+            check_feature(org, 'contabilita')
     if f.stato != "bozza":
         raise HTTPException(status_code=409, detail="Solo le fatture in bozza possono essere eliminate")
     db.delete(f)
@@ -316,6 +329,10 @@ def invia_fattura(
     ).filter(Fattura.id == fattura_id).first()
     if not f:
         raise HTTPException(status_code=404, detail="Fattura non trovata")
+    if f.organizzazione_id:
+        org = db.query(Organizzazione).filter_by(id=f.organizzazione_id).first()
+        if org:
+            check_feature(org, 'contabilita')
     if f.stato != "bozza":
         raise HTTPException(status_code=409, detail="Solo le fatture in bozza possono essere inviate")
     if f.importo_totale == 0:
@@ -339,6 +356,10 @@ def annulla_fattura(
     ).filter(Fattura.id == fattura_id).first()
     if not f:
         raise HTTPException(status_code=404, detail="Fattura non trovata")
+    if f.organizzazione_id:
+        org = db.query(Organizzazione).filter_by(id=f.organizzazione_id).first()
+        if org:
+            check_feature(org, 'contabilita')
     if f.stato == "pagata":
         raise HTTPException(status_code=409, detail="Non puoi annullare una fattura già pagata")
     f.stato = "annullata"
@@ -359,6 +380,10 @@ def add_voce(
     f = db.query(Fattura).options(joinedload(Fattura.voci)).filter(Fattura.id == fattura_id).first()
     if not f:
         raise HTTPException(status_code=404, detail="Fattura non trovata")
+    if f.organizzazione_id:
+        org = db.query(Organizzazione).filter_by(id=f.organizzazione_id).first()
+        if org:
+            check_feature(org, 'contabilita')
     _guard_modificabile(f)
     v = FatturaVoce(
         fattura_id=fattura_id,
@@ -386,6 +411,10 @@ def update_voce(
     f = db.query(Fattura).options(joinedload(Fattura.voci)).filter(Fattura.id == fattura_id).first()
     if not f:
         raise HTTPException(status_code=404, detail="Fattura non trovata")
+    if f.organizzazione_id:
+        org = db.query(Organizzazione).filter_by(id=f.organizzazione_id).first()
+        if org:
+            check_feature(org, 'contabilita')
     _guard_modificabile(f)
     v = db.query(FatturaVoce).filter(FatturaVoce.id == voce_id, FatturaVoce.fattura_id == fattura_id).first()
     if not v:
@@ -411,6 +440,10 @@ def delete_voce(
     f = db.query(Fattura).options(joinedload(Fattura.voci)).filter(Fattura.id == fattura_id).first()
     if not f:
         raise HTTPException(status_code=404, detail="Fattura non trovata")
+    if f.organizzazione_id:
+        org = db.query(Organizzazione).filter_by(id=f.organizzazione_id).first()
+        if org:
+            check_feature(org, 'contabilita')
     _guard_modificabile(f)
     v = db.query(FatturaVoce).filter(FatturaVoce.id == voce_id, FatturaVoce.fattura_id == fattura_id).first()
     if not v:
@@ -435,6 +468,10 @@ def add_pagamento(
     ).filter(Fattura.id == fattura_id).first()
     if not f:
         raise HTTPException(status_code=404, detail="Fattura non trovata")
+    if f.organizzazione_id:
+        org = db.query(Organizzazione).filter_by(id=f.organizzazione_id).first()
+        if org:
+            check_feature(org, 'contabilita')
     if f.stato not in ("inviata", "scaduta"):
         raise HTTPException(status_code=409,
             detail=f"Impossibile registrare pagamenti su una fattura in stato '{f.stato}'")
@@ -472,6 +509,10 @@ def delete_pagamento(
     f = db.query(Fattura).options(joinedload(Fattura.pagamenti)).filter(Fattura.id == fattura_id).first()
     if not f:
         raise HTTPException(status_code=404, detail="Fattura non trovata")
+    if f.organizzazione_id:
+        org = db.query(Organizzazione).filter_by(id=f.organizzazione_id).first()
+        if org:
+            check_feature(org, 'contabilita')
     if f.stato == "annullata":
         raise HTTPException(status_code=409, detail="Fattura annullata")
     p = db.query(Pagamento).filter(Pagamento.id == pag_id, Pagamento.fattura_id == fattura_id).first()

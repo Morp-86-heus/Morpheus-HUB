@@ -2,8 +2,9 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from typing import List, Optional
 from database import get_db
-from models import Servizio, User, RuoloEnum
+from models import Servizio, Organizzazione, User, RuoloEnum
 from auth import get_current_user, require_roles, get_active_org_id
+from utils.plan import check_feature
 import schemas
 
 router = APIRouter(prefix="/api/servizi", tags=["servizi"])
@@ -37,6 +38,8 @@ def create_servizio(
     _: User = Depends(_comm),
     org_id: int = Depends(get_active_org_id),
 ):
+    org = db.query(Organizzazione).filter_by(id=org_id).first()
+    check_feature(org, 'servizi')
     obj = Servizio(**body.model_dump(), organizzazione_id=org_id)
     db.add(obj)
     db.commit()
@@ -65,6 +68,8 @@ def update_servizio(
     _: User = Depends(_comm),
     org_id: int = Depends(get_active_org_id),
 ):
+    org = db.query(Organizzazione).filter_by(id=org_id).first()
+    check_feature(org, 'servizi')
     obj = db.query(Servizio).filter_by(id=sid, organizzazione_id=org_id).first()
     if not obj:
         raise HTTPException(status_code=404, detail="Servizio non trovato")
@@ -82,6 +87,8 @@ def delete_servizio(
     _: User = Depends(_comm),
     org_id: int = Depends(get_active_org_id),
 ):
+    org = db.query(Organizzazione).filter_by(id=org_id).first()
+    check_feature(org, 'servizi')
     obj = db.query(Servizio).filter_by(id=sid, organizzazione_id=org_id).first()
     if not obj:
         raise HTTPException(status_code=404, detail="Servizio non trovato")

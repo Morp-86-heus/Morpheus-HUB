@@ -25,6 +25,7 @@ import AbbonamentiPage from './pages/AbbonamentiPage'
 import FunnelPage from './pages/FunnelPage'
 import AdminDatabasePage from './pages/AdminDatabasePage'
 import CalendarioPage from './pages/CalendarioPage'
+import PlanGate from './components/PlanGate'
 import ForgotPasswordPage from './pages/ForgotPasswordPage'
 import ResetPasswordPage from './pages/ResetPasswordPage'
 import EmailSistemaPage from './pages/EmailSistemaPage'
@@ -174,16 +175,16 @@ function AppRoutes() {
             <Route path="/stats" element={<ProtectedRoute allow="view_stats"><StatsPage /></ProtectedRoute>} />
             <Route path="/storico" element={<ProtectedRoute allow="storico.view"><StoricoPage /></ProtectedRoute>} />
             <Route path="/anagrafiche" element={<ProtectedRoute allow="anagrafiche.view"><AnagrafichePage /></ProtectedRoute>} />
-            <Route path="/listini" element={<ProtectedRoute allow="listini.view"><ListiniPage /></ProtectedRoute>} />
-            <Route path="/magazzino" element={<ProtectedRoute allow="magazzino.view"><MagazzinoPage /></ProtectedRoute>} />
+            <Route path="/listini" element={<ProtectedRoute allow="listini.view"><PlanGate feature="listini"><ListiniPage /></PlanGate></ProtectedRoute>} />
+            <Route path="/magazzino" element={<ProtectedRoute allow="magazzino.view"><PlanGate feature="magazzino"><MagazzinoPage /></PlanGate></ProtectedRoute>} />
             <Route path="/users" element={<ProtectedRoute allow="manage_users"><UsersPage /></ProtectedRoute>} />
             <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
             <Route path="/amministrazione" element={<ProtectedRoute allowRoles={['amministratore', 'proprietario']}><AmministrazionePage /></ProtectedRoute>} />
             <Route path="/clienti-diretti" element={<ProtectedRoute allow="clienti.view"><ClientiDirettiPage /></ProtectedRoute>} />
-            <Route path="/servizi" element={<ProtectedRoute allow="servizi.view"><ServiziPage /></ProtectedRoute>} />
-            <Route path="/abbonamenti" element={<ProtectedRoute allow="abbonamenti.view"><AbbonamentiPage /></ProtectedRoute>} />
-            <Route path="/funnel" element={<ProtectedRoute allow="funnel.view"><FunnelPage /></ProtectedRoute>} />
-            <Route path="/calendario" element={<ProtectedRoute><CalendarioPage /></ProtectedRoute>} />
+            <Route path="/servizi" element={<ProtectedRoute allow="servizi.view"><PlanGate feature="servizi"><ServiziPage /></PlanGate></ProtectedRoute>} />
+            <Route path="/abbonamenti" element={<ProtectedRoute allow="abbonamenti.view"><PlanGate feature="servizi"><AbbonamentiPage /></PlanGate></ProtectedRoute>} />
+            <Route path="/funnel" element={<ProtectedRoute allow="funnel.view"><PlanGate feature="funnel"><FunnelPage /></PlanGate></ProtectedRoute>} />
+            <Route path="/calendario" element={<ProtectedRoute><PlanGate feature="calendario"><CalendarioPage /></PlanGate></ProtectedRoute>} />
             <Route path="/admin/database" element={<ProtectedRoute allowRoles={['proprietario']}><AdminDatabasePage /></ProtectedRoute>} />
             {/* Il proprietario con org attiva può anche tornare alla console org */}
             {isProprietario && (

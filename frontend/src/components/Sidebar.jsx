@@ -151,9 +151,11 @@ const Icon = ({ name, className = "w-5 h-5" }) => {
   return icons[name] || null
 }
 
-function NavItem({ to, icon, label, exact, collapsed, onClick, indent }) {
+function NavItem({ to, icon, label, exact, collapsed, onClick, indent, feature }) {
   const { pathname } = useLocation()
+  const { hasFeature } = useAuth()
   const active = exact ? pathname === to : pathname.startsWith(to)
+  const locked = feature && !hasFeature(feature)
 
   return (
     <Link
@@ -167,7 +169,12 @@ function NavItem({ to, icon, label, exact, collapsed, onClick, indent }) {
       }`}
     >
       <span className="shrink-0">{icon}</span>
-      {!collapsed && <span>{label}</span>}
+      {!collapsed && <span className="flex-1">{label}</span>}
+      {!collapsed && locked && (
+        <span className="ml-auto text-[9px] font-bold bg-amber-100 text-amber-600 px-1.5 py-0.5 rounded uppercase tracking-wide">
+          Upgrade
+        </span>
+      )}
       {collapsed && (
         <span className="absolute left-full ml-2 px-2 py-1 bg-gray-900 text-white text-xs rounded opacity-0 group-hover:opacity-100 whitespace-nowrap pointer-events-none z-50 transition-opacity">
           {label}
@@ -219,7 +226,7 @@ function NavGroup({ icon, label, collapsed, children, matchPaths, onClick }) {
 }
 
 export default function Sidebar() {
-  const { user, logout, can, activeOrg, clearActiveOrg, isProprietario, isAmministratore } = useAuth()
+  const { user, logout, can, activeOrg, clearActiveOrg, isProprietario, isAmministratore, hasFeature } = useAuth()
   const navigate = useNavigate()
   const [collapsed, setCollapsed] = useState(false)
   const [mobileOpen, setMobileOpen] = useState(false)
@@ -250,7 +257,7 @@ export default function Sidebar() {
 
   const orgNavItems = [
     { to: '/', icon: <Icon name="dashboard" />, label: 'Dashboard', exact: true },
-    showMagazzino && { to: '/magazzino', icon: <Icon name="magazzino" />, label: 'Magazzino' },
+    showMagazzino && { to: '/magazzino', icon: <Icon name="magazzino" />, label: 'Magazzino', feature: 'magazzino' },
   ].filter(Boolean)
 
   const navItems = (isProprietario && !activeOrg) ? adminNavItems : orgNavItems
@@ -353,10 +360,10 @@ export default function Sidebar() {
             matchPaths={['/anagrafiche', '/listini', '/servizi', '/abbonamenti', '/funnel']}
           >
             {showAnagrafiche && <NavItem to="/anagrafiche" icon={<Icon name="anagrafiche" />} label="Anagrafiche" collapsed={collapsed} onClick={onNav} indent />}
-            {showListini    && <NavItem to="/listini"     icon={<Icon name="listini" />}     label="Listini Prezzi"    collapsed={collapsed} onClick={onNav} indent />}
-            {showServizi    && <NavItem to="/servizi"     icon={<Icon name="listini" />}     label="Catalogo Servizi"  collapsed={collapsed} onClick={onNav} indent />}
-            {showAbbonamenti && <NavItem to="/abbonamenti" icon={<Icon name="storico" />}   label="Abbonamenti"       collapsed={collapsed} onClick={onNav} indent />}
-            {showFunnel     && <NavItem to="/funnel"      icon={<Icon name="funnel" />}      label="Funnel Vendite"    collapsed={collapsed} onClick={onNav} indent />}
+            {showListini    && <NavItem to="/listini"     icon={<Icon name="listini" />}     label="Listini Prezzi"    collapsed={collapsed} onClick={onNav} indent feature="listini" />}
+            {showServizi    && <NavItem to="/servizi"     icon={<Icon name="listini" />}     label="Catalogo Servizi"  collapsed={collapsed} onClick={onNav} indent feature="servizi" />}
+            {showAbbonamenti && <NavItem to="/abbonamenti" icon={<Icon name="storico" />}   label="Abbonamenti"       collapsed={collapsed} onClick={onNav} indent feature="servizi" />}
+            {showFunnel     && <NavItem to="/funnel"      icon={<Icon name="funnel" />}      label="Funnel Vendite"    collapsed={collapsed} onClick={onNav} indent feature="funnel" />}
           </NavGroup>
         )}
         {/* Statistiche */}
@@ -365,7 +372,7 @@ export default function Sidebar() {
         )}
         {/* Calendario */}
         {!(isProprietario && !activeOrg) && (
-          <NavItem to="/calendario" icon={<Icon name="calendario" />} label="Calendario" collapsed={collapsed} onClick={onNav} />
+          <NavItem to="/calendario" icon={<Icon name="calendario" />} label="Calendario" collapsed={collapsed} onClick={onNav} feature="calendario" />
         )}
         {/* Gruppo Amministrazione — console proprietario (senza org) */}
         {isProprietario && !activeOrg && (

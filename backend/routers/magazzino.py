@@ -4,8 +4,9 @@ from fastapi import APIRouter, Depends, HTTPException, Response
 from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import or_
 from database import get_db
-from models import Articolo, MovimentoMagazzino, User, RuoloEnum
+from models import Articolo, MovimentoMagazzino, Organizzazione, User, RuoloEnum
 from auth import require_roles, get_active_org_id
+from utils.plan import check_feature
 import schemas
 
 router = APIRouter(prefix="/api/magazzino", tags=["magazzino"])
@@ -59,6 +60,8 @@ def create_articolo(
     _: User = Depends(_admin),
     org_id: int = Depends(get_active_org_id),
 ):
+    org = db.query(Organizzazione).filter_by(id=org_id).first()
+    check_feature(org, 'magazzino')
     if payload.seriale:
         if db.query(Articolo).filter(
             Articolo.organizzazione_id == org_id,
@@ -86,6 +89,8 @@ def update_articolo(
     _: User = Depends(_admin),
     org_id: int = Depends(get_active_org_id),
 ):
+    org = db.query(Organizzazione).filter_by(id=org_id).first()
+    check_feature(org, 'magazzino')
     obj = db.query(Articolo).filter_by(id=aid, organizzazione_id=org_id).first()
     if not obj:
         raise HTTPException(status_code=404, detail="Articolo non trovato")
@@ -118,6 +123,8 @@ def delete_articolo(
     _: User = Depends(_admin),
     org_id: int = Depends(get_active_org_id),
 ):
+    org = db.query(Organizzazione).filter_by(id=org_id).first()
+    check_feature(org, 'magazzino')
     obj = db.query(Articolo).filter_by(id=aid, organizzazione_id=org_id).first()
     if not obj:
         raise HTTPException(status_code=404, detail="Articolo non trovato")
@@ -133,6 +140,8 @@ def add_movimento(
     current_user: User = Depends(_tutti),
     org_id: int = Depends(get_active_org_id),
 ):
+    org = db.query(Organizzazione).filter_by(id=org_id).first()
+    check_feature(org, 'magazzino')
     articolo = db.query(Articolo).filter_by(id=aid, organizzazione_id=org_id).first()
     if not articolo:
         raise HTTPException(status_code=404, detail="Articolo non trovato")

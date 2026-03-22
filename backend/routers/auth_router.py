@@ -11,6 +11,7 @@ from auth import (
     get_current_user, require_proprietario, require_admin_or_above, get_active_org_id,
 )
 from permissions import check_permission
+from utils.plan import check_user_limit
 import schemas
 
 
@@ -77,6 +78,11 @@ def create_user(
     _require_perm(current_user, "utenti.manage", db)
     if db.query(User).filter(User.email == body.email).first():
         raise HTTPException(status_code=409, detail="Email già in uso")
+
+    # Verifica limite utenti per piano
+    org = db.query(Organizzazione).filter_by(id=org_id).first()
+    current_count = db.query(User).filter(User.organizzazione_id == org_id, User.attivo == True).count()
+    check_user_limit(org, current_count)
 
     # Il ruolo proprietario non può essere assegnato a utenti di un'org
     if body.ruolo == RuoloEnum.proprietario:

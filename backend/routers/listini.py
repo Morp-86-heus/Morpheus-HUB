@@ -3,8 +3,9 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session, joinedload
 from typing import List, Optional
 from database import get_db
-from models import Listino, ListinoVoce, User, RuoloEnum
+from models import Listino, ListinoVoce, Organizzazione, User, RuoloEnum
 from auth import get_current_user, require_roles, get_active_org_id
+from utils.plan import check_feature
 import schemas
 
 router = APIRouter(prefix="/api/listini", tags=["listini"])
@@ -33,6 +34,8 @@ def create_listino(
     _: User = Depends(_admin),
     org_id: int = Depends(get_active_org_id),
 ):
+    org = db.query(Organizzazione).filter_by(id=org_id).first()
+    check_feature(org, 'listini')
     obj = Listino(**payload.model_dump(), organizzazione_id=org_id)
     db.add(obj)
     db.commit()
@@ -48,6 +51,8 @@ def update_listino(
     _: User = Depends(_admin),
     org_id: int = Depends(get_active_org_id),
 ):
+    org = db.query(Organizzazione).filter_by(id=org_id).first()
+    check_feature(org, 'listini')
     obj = db.query(Listino).filter_by(id=lid, organizzazione_id=org_id).first()
     if not obj:
         raise HTTPException(status_code=404, detail="Listino non trovato")
@@ -65,6 +70,8 @@ def delete_listino(
     _: User = Depends(_admin),
     org_id: int = Depends(get_active_org_id),
 ):
+    org = db.query(Organizzazione).filter_by(id=org_id).first()
+    check_feature(org, 'listini')
     obj = db.query(Listino).filter_by(id=lid, organizzazione_id=org_id).first()
     if not obj:
         raise HTTPException(status_code=404, detail="Listino non trovato")
@@ -80,6 +87,8 @@ def add_voce(
     _: User = Depends(_admin),
     org_id: int = Depends(get_active_org_id),
 ):
+    org = db.query(Organizzazione).filter_by(id=org_id).first()
+    check_feature(org, 'listini')
     if not db.query(Listino).filter_by(id=lid, organizzazione_id=org_id).first():
         raise HTTPException(status_code=404, detail="Listino non trovato")
     obj = ListinoVoce(listino_id=lid, **payload.model_dump())
@@ -98,6 +107,8 @@ def update_voce(
     _: User = Depends(_admin),
     org_id: int = Depends(get_active_org_id),
 ):
+    org = db.query(Organizzazione).filter_by(id=org_id).first()
+    check_feature(org, 'listini')
     # Verifica che il listino appartenga all'org
     if not db.query(Listino).filter_by(id=lid, organizzazione_id=org_id).first():
         raise HTTPException(status_code=404, detail="Listino non trovato")
@@ -119,6 +130,8 @@ def delete_voce(
     _: User = Depends(_admin),
     org_id: int = Depends(get_active_org_id),
 ):
+    org = db.query(Organizzazione).filter_by(id=org_id).first()
+    check_feature(org, 'listini')
     if not db.query(Listino).filter_by(id=lid, organizzazione_id=org_id).first():
         raise HTTPException(status_code=404, detail="Listino non trovato")
     obj = db.query(ListinoVoce).filter_by(id=vid, listino_id=lid).first()

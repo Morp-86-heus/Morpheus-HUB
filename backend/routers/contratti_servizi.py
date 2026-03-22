@@ -5,8 +5,9 @@ from typing import List, Optional
 from datetime import date, timedelta
 from calendar import monthrange
 from database import get_db
-from models import ContrattoServizio, ClienteDiretto, Servizio, User, RuoloEnum, StatoContratto, TipoFatturazione
+from models import ContrattoServizio, ClienteDiretto, Organizzazione, Servizio, User, RuoloEnum, StatoContratto, TipoFatturazione
 from auth import get_current_user, require_roles, get_active_org_id
+from utils.plan import check_feature
 import schemas
 
 router = APIRouter(prefix="/api/contratti-servizi", tags=["contratti-servizi"])
@@ -189,6 +190,8 @@ def create_contratto(
     _: User = Depends(_comm),
     org_id: int = Depends(get_active_org_id),
 ):
+    org = db.query(Organizzazione).filter_by(id=org_id).first()
+    check_feature(org, 'servizi')
     cliente = db.query(ClienteDiretto).filter_by(id=body.cliente_id, organizzazione_id=org_id).first()
     if not cliente:
         raise HTTPException(status_code=404, detail="Cliente non trovato")
@@ -228,6 +231,8 @@ def update_contratto(
     _: User = Depends(_comm),
     org_id: int = Depends(get_active_org_id),
 ):
+    org = db.query(Organizzazione).filter_by(id=org_id).first()
+    check_feature(org, 'servizi')
     obj = db.query(ContrattoServizio).filter_by(id=cid, organizzazione_id=org_id).first()
     if not obj:
         raise HTTPException(status_code=404, detail="Contratto non trovato")
@@ -247,6 +252,8 @@ def delete_contratto(
     _: User = Depends(_comm),
     org_id: int = Depends(get_active_org_id),
 ):
+    org = db.query(Organizzazione).filter_by(id=org_id).first()
+    check_feature(org, 'servizi')
     obj = db.query(ContrattoServizio).filter_by(id=cid, organizzazione_id=org_id).first()
     if not obj:
         raise HTTPException(status_code=404, detail="Contratto non trovato")

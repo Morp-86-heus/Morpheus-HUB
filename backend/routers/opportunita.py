@@ -3,8 +3,9 @@ from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import func
 from typing import List, Optional
 from database import get_db
-from models import Opportunita, ClienteDiretto, User, RuoloEnum, FaseOpportunita
+from models import Opportunita, ClienteDiretto, Organizzazione, User, RuoloEnum, FaseOpportunita
 from auth import require_roles, get_active_org_id
+from utils.plan import check_feature
 import schemas
 
 router = APIRouter(prefix="/api/opportunita", tags=["opportunita"])
@@ -97,6 +98,8 @@ def create_opportunita(
     _: User = Depends(_comm),
     org_id: int = Depends(get_active_org_id),
 ):
+    org = db.query(Organizzazione).filter_by(id=org_id).first()
+    check_feature(org, 'funnel')
     obj = Opportunita(**body.model_dump(), organizzazione_id=org_id)
     db.add(obj)
     db.commit()
@@ -126,6 +129,8 @@ def update_opportunita(
     _: User = Depends(_comm),
     org_id: int = Depends(get_active_org_id),
 ):
+    org = db.query(Organizzazione).filter_by(id=org_id).first()
+    check_feature(org, 'funnel')
     obj = db.query(Opportunita).filter_by(id=oid, organizzazione_id=org_id).first()
     if not obj:
         raise HTTPException(404, "Opportunità non trovata")
@@ -143,6 +148,8 @@ def delete_opportunita(
     _: User = Depends(_comm),
     org_id: int = Depends(get_active_org_id),
 ):
+    org = db.query(Organizzazione).filter_by(id=org_id).first()
+    check_feature(org, 'funnel')
     obj = db.query(Opportunita).filter_by(id=oid, organizzazione_id=org_id).first()
     if not obj:
         raise HTTPException(404, "Opportunità non trovata")
