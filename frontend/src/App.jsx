@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import { AuthProvider, useAuth } from './contexts/AuthContext'
 import { ThemeProvider } from './contexts/ThemeContext'
 import { NotificheProvider } from './contexts/NotificheContext'
@@ -25,6 +25,9 @@ import AbbonamentiPage from './pages/AbbonamentiPage'
 import FunnelPage from './pages/FunnelPage'
 import AdminDatabasePage from './pages/AdminDatabasePage'
 import CalendarioPage from './pages/CalendarioPage'
+import ForgotPasswordPage from './pages/ForgotPasswordPage'
+import ResetPasswordPage from './pages/ResetPasswordPage'
+import EmailSistemaPage from './pages/EmailSistemaPage'
 
 function AuthErrorToast() {
   const [messages, setMessages] = useState([])
@@ -106,6 +109,11 @@ function ProtectedRoute({ children, allow, allowRoles }) {
 
 function AppRoutes() {
   const { user, loading, isProprietario, activeOrg, logout } = useAuth()
+  const location = useLocation()
+
+  // Pagine pubbliche (nessuna autenticazione richiesta)
+  if (location.pathname === '/forgot-password') return <ForgotPasswordPage />
+  if (location.pathname === '/reset-password') return <ResetPasswordPage />
 
   if (loading) {
     return (
@@ -132,6 +140,7 @@ function AppRoutes() {
           <Routes>
             <Route path="/organizzazioni" element={<OrganizzazioniPage />} />
             <Route path="/contabilita" element={<ContabilitaPage />} />
+            <Route path="/email-sistema" element={<EmailSistemaPage />} />
             <Route path="/profile" element={<ProfilePage />} />
             <Route path="/organizzazioni/:orgId/anagrafica" element={<OrgAnagraficaPage />} />
             <Route path="/admin/database" element={<AdminDatabasePage />} />

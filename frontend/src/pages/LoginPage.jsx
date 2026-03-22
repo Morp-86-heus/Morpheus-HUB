@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { Link } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 
 export default function LoginPage() {
@@ -86,6 +87,13 @@ export default function LoginPage() {
           >
             {loading ? 'Accesso in corso...' : 'Accedi'}
           </button>
+
+          <Link
+            to="/forgot-password"
+            className="block text-center text-xs text-gray-400 hover:text-blue-500 transition-colors"
+          >
+            Password dimenticata?
+          </Link>
         </form>
 
         <p className="text-center text-[10px] text-gray-300 mt-6">© Morpheus-HUB</p>

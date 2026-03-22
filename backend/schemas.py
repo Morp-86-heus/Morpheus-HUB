@@ -543,6 +543,15 @@ class LoginRequest(BaseModel):
     remember_me: bool = False
 
 
+class ForgotPasswordRequest(BaseModel):
+    email: str
+
+
+class ResetPasswordRequest(BaseModel):
+    token: str
+    password: str
+
+
 # ── Servizi ────────────────────────────────────────────────────────────────────
 from models import CategoriaServizio, TipoFatturazione, StatoContratto
 

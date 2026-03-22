@@ -1,3 +1,7 @@
+import os
+import secrets
+from datetime import datetime, timedelta, timezone
+
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlalchemy.orm import Session
 from database import get_db
@@ -174,3 +178,106 @@ def delete_user(
             raise HTTPException(status_code=403, detail="Non puoi eliminare il proprietario")
     db.delete(target)
     db.commit()
+
+
+# ── Recupero password ──────────────────────────────────────────────────────────
+
+RESET_TOKEN_EXPIRE_MINUTES = 60
+FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:13000")
+
+
+@router.post("/forgot-password")
+def forgot_password(req: schemas.ForgotPasswordRequest, db: Session = Depends(get_db)):
+    user = db.query(User).filter(User.email == req.email).first()
+    if not user or not user.attivo:
+        # Risposta volutamente generica per non rivelare l'esistenza dell'account
+        return {"message": "Se l'indirizzo email è registrato, riceverai le istruzioni a breve."}
+
+    token = secrets.token_urlsafe(32)
+    user.password_reset_token = token
+    user.password_reset_expiry = datetime.now(timezone.utc) + timedelta(minutes=RESET_TOKEN_EXPIRE_MINUTES)
+    db.commit()
+
+    reset_url = f"{FRONTEND_URL}/reset-password?token={token}"
+
+    html = f"""
+    <html>
+    <body style="font-family:system-ui,sans-serif;color:#1e293b;background:#f8fafc;margin:0;padding:0">
+      <div style="max-width:480px;margin:40px auto;background:#fff;border-radius:16px;
+                  border:1px solid #e2e8f0;padding:32px;box-shadow:0 4px 24px rgba(0,0,0,.06)">
+        <div style="width:48px;height:48px;background:#f97316;border-radius:12px;
+                    display:flex;align-items:center;justify-content:center;margin-bottom:20px">
+          <span style="color:#fff;font-size:24px;line-height:1;font-weight:900">M</span>
+        </div>
+        <h2 style="margin:0 0 8px;font-size:20px;font-weight:700">Ripristino password</h2>
+        <p style="margin:0 0 20px;color:#64748b;font-size:14px">
+          Hai richiesto il ripristino della password per l'account <strong>{user.email}</strong>.<br>
+          Clicca il pulsante qui sotto per impostare una nuova password. Il link è valido per {RESET_TOKEN_EXPIRE_MINUTES} minuti.
+        </p>
+        <a href="{reset_url}"
+           style="display:inline-block;background:#2563eb;color:#fff;text-decoration:none;
+                  padding:12px 24px;border-radius:10px;font-size:14px;font-weight:600">
+          Reimposta password
+        </a>
+        <p style="margin:20px 0 0;font-size:12px;color:#94a3b8">
+          Se non hai richiesto il ripristino, ignora questa email. La tua password non verrà modificata.
+        </p>
+        <hr style="border:none;border-top:1px solid #e2e8f0;margin:24px 0 16px">
+        <p style="margin:0;font-size:11px;color:#cbd5e1">
+          Oppure copia questo link nel browser:<br>
+          <span style="color:#2563eb;word-break:break-all">{reset_url}</span>
+        </p>
+        <p style="margin:16px 0 0;font-size:11px;color:#94a3b8;text-align:center">
+          Morpheus HUB
+        </p>
+      </div>
+    </body>
+    </html>
+    """
+
+    # Usa l'SMTP di sistema (organizzazione_id IS NULL)
+    from routers.email_config import get_system_smtp, send_email
+    cfg = get_system_smtp(db)
+    if not cfg or not cfg.enabled or not cfg.host or not cfg.from_email:
+        # SMTP non configurato: il token è salvato, ma non si può inviare email
+        return {"message": "SMTP di sistema non configurato. Contatta l'amministratore per ricevere il link di reset."}
+
+    try:
+        send_email(user.email, "Ripristino password — Morpheus HUB", html, cfg)
+    except Exception:
+        # Non rivelare l'errore SMTP all'utente
+        pass
+
+    return {"message": "Se l'indirizzo email è registrato, riceverai le istruzioni a breve."}
+
+
+@router.get("/reset-password/validate/{token}")
+def validate_reset_token(token: str, db: Session = Depends(get_db)):
+    user = db.query(User).filter(User.password_reset_token == token).first()
+    if not user or not user.password_reset_expiry:
+        return {"valid": False}
+    expiry = user.password_reset_expiry
+    if expiry.tzinfo is None:
+        expiry = expiry.replace(tzinfo=timezone.utc)
+    if datetime.now(timezone.utc) > expiry:
+        return {"valid": False}
+    return {"valid": True, "email": user.email}
+
+
+@router.post("/reset-password")
+def reset_password(req: schemas.ResetPasswordRequest, db: Session = Depends(get_db)):
+    user = db.query(User).filter(User.password_reset_token == req.token).first()
+    if not user or not user.password_reset_expiry:
+        raise HTTPException(400, "Token non valido o scaduto.")
+    expiry = user.password_reset_expiry
+    if expiry.tzinfo is None:
+        expiry = expiry.replace(tzinfo=timezone.utc)
+    if datetime.now(timezone.utc) > expiry:
+        raise HTTPException(400, "Il link di ripristino è scaduto. Richiedi un nuovo link.")
+    if len(req.password) < 8:
+        raise HTTPException(422, "La password deve essere di almeno 8 caratteri.")
+    user.password_hash = hash_password(req.password)
+    user.password_reset_token = None
+    user.password_reset_expiry = None
+    db.commit()
+    return {"message": "Password aggiornata con successo. Ora puoi accedere."}

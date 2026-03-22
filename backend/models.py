@@ -115,6 +115,8 @@ class User(Base):
     attivo = Column(Boolean, default=True)
     organizzazione_id = Column(Integer, ForeignKey("organizzazioni.id"), nullable=True, index=True)
     created_at = Column(DateTime, server_default=func.now())
+    password_reset_token = Column(String(255), nullable=True)
+    password_reset_expiry = Column(DateTime, nullable=True)
 
     organizzazione = relationship("Organizzazione", back_populates="users")
 
@@ -387,7 +389,7 @@ class EmailSmtpConfig(Base):
     __tablename__ = "email_smtp_config"
 
     id = Column(Integer, primary_key=True, index=True)
-    organizzazione_id = Column(Integer, ForeignKey("organizzazioni.id", ondelete="CASCADE"), unique=True, nullable=False)
+    organizzazione_id = Column(Integer, ForeignKey("organizzazioni.id", ondelete="CASCADE"), unique=True, nullable=True)
     enabled = Column(Boolean, default=False, nullable=False)
     host = Column(String(200), nullable=True)
     port = Column(Integer, default=587)

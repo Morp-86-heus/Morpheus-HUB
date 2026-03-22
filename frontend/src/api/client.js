@@ -185,6 +185,10 @@ export const emailConfigApi = {
   getNotifiche: () => api.get('/email-config/notifiche'),
   updateNotifiche: (data) => api.put('/email-config/notifiche', data),
   testEmail: (to_email) => api.post('/email-config/test', { to_email }),
+  // SMTP di sistema (solo proprietario)
+  getSystemSmtp: () => api.get('/email-config/system/smtp'),
+  updateSystemSmtp: (data) => api.put('/email-config/system/smtp', data),
+  testSystemEmail: (to_email) => api.post('/email-config/system/test', { to_email }),
 }
 
 export const adminDbApi = {
