@@ -97,7 +97,7 @@ export default function CookiePolicyPage() {
             <p>
               Per qualsiasi informazione relativa all'uso dei cookie e al trattamento dei dati personali, è possibile
               contattare Morpheus Hub S.r.l. all'indirizzo:{' '}
-              <a href="mailto:privacy@morpheushub.it" className="text-blue-600 hover:underline">privacy@morpheushub.it</a>.
+              <a href="mailto:privacy@morpheushub.cloud" className="text-blue-600 hover:underline">privacy@morpheushub.cloud</a>.
             </p>
             <p className="mt-2">
               Per l'informativa completa sul trattamento dei dati personali, consultare la{' '}

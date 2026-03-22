@@ -19,7 +19,7 @@ export default function PrivacyPolicyPage() {
             <p>
               Il Titolare del trattamento dei dati personali è <strong>Morpheus Hub S.r.l.</strong>, con sede legale in Italia.
               Per qualsiasi richiesta relativa al trattamento dei dati personali è possibile contattare il Titolare
-              all'indirizzo e-mail: <a href="mailto:privacy@morpheushub.it" className="text-blue-600 hover:underline">privacy@morpheushub.it</a>.
+              all'indirizzo e-mail: <a href="mailto:privacy@morpheushub.cloud" className="text-blue-600 hover:underline">privacy@morpheushub.cloud</a>.
             </p>
           </section>
 
@@ -91,7 +91,7 @@ export default function PrivacyPolicyPage() {
             </ul>
             <p className="mt-3">
               Per esercitare i propri diritti, è possibile inviare una richiesta a{' '}
-              <a href="mailto:privacy@morpheushub.it" className="text-blue-600 hover:underline">privacy@morpheushub.it</a>.
+              <a href="mailto:privacy@morpheushub.cloud" className="text-blue-600 hover:underline">privacy@morpheushub.cloud</a>.
             </p>
           </section>
 
