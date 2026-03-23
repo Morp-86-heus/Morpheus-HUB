@@ -24,8 +24,8 @@ def set_rls_org(db: Session, org_id: int | None) -> None:
     Il SET LOCAL è valido solo per la transazione corrente, quindi è sicuro
     con il connection pooling: si azzera automaticamente a fine richiesta.
     """
-    val = str(org_id) if org_id else '0'
-    db.execute(text(f"SET LOCAL app.current_org_id = '{val}'"))
+    val = int(org_id) if org_id else 0  # sempre intero, nessun rischio injection
+    db.execute(text(f"SET LOCAL app.current_org_id = {val}"))
 
 
 def init_db():

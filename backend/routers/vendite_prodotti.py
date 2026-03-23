@@ -64,8 +64,10 @@ class StatsOut(BaseModel):
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
 def _calcola_totale(prezzo_unitario: int, quantita: int, sconto_pct: int) -> int:
+    if not (0 <= sconto_pct <= 100):
+        raise HTTPException(422, "sconto_pct deve essere compreso tra 0 e 100")
     lordo = prezzo_unitario * quantita
-    sconto = int(lordo * max(0, min(100, sconto_pct)) / 100)
+    sconto = round(lordo * sconto_pct / 100)
     return lordo - sconto
 
 

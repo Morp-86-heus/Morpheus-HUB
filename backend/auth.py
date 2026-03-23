@@ -1,15 +1,26 @@
 import os
+import logging
 from datetime import datetime, timedelta, timezone
 from typing import Optional
 from fastapi import Depends, HTTPException, Request, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from jose import JWTError, jwt
 from passlib.context import CryptContext
+from sqlalchemy import text
 from sqlalchemy.orm import Session
 from database import get_db, set_rls_org
 from models import User, Organizzazione, RuoloEnum
 
+logger = logging.getLogger(__name__)
+
 SECRET_KEY = os.getenv("SECRET_KEY", "changeme-use-a-long-random-string-in-production")
+_WEAK_KEYS = {
+    "changeme-use-a-long-random-string-in-production",
+    "cambia-questa-chiave-segreta-in-produzione-con-stringa-lunga",
+    "changeme",
+}
+if not SECRET_KEY or SECRET_KEY in _WEAK_KEYS:
+    logger.warning("⚠️  SECRET_KEY non configurata o debole — imposta una chiave sicura in produzione!")
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_HOURS = 12
 REMEMBER_ME_EXPIRE_DAYS = 30
@@ -52,10 +63,7 @@ def get_current_user(
     # Aggiorna last_seen (throttle: solo se > 60s dall'ultimo aggiornamento)
     now = datetime.now(timezone.utc).replace(tzinfo=None)
     if user.last_seen is None or (now - user.last_seen).total_seconds() > 60:
-        db.execute(
-            __import__('sqlalchemy').text("UPDATE users SET last_seen = :now WHERE id = :id"),
-            {"now": now, "id": user.id}
-        )
+        db.execute(text("UPDATE users SET last_seen = :now WHERE id = :id"), {"now": now, "id": user.id})
         db.commit()
     return user
 

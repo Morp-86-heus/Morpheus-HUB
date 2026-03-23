@@ -7,31 +7,28 @@ const NotificheContext = createContext(null)
 const POLL_INTERVAL = 30_000 // 30 secondi
 
 // ── Audio ─────────────────────────────────────────────────────────────────────
-// I browser bloccano AudioContext finché non c'è un gesto utente (autoplay policy).
-// Teniamo un contesto persistente e lo sblocchiamo al primo click/keydown.
+// AudioContext viene creato solo al primo gesto utente (autoplay policy).
+// _audioUnlocked = true dopo il primo click/keydown/touchend.
 
 let _audioCtx = null
+let _audioUnlocked = false
 
-function getAudioCtx() {
-  if (!_audioCtx) {
-    _audioCtx = new (window.AudioContext || window.webkitAudioContext)()
-  }
-  return _audioCtx
+function _unlockAudio() {
+  _audioUnlocked = true
+  if (_audioCtx) { try { _audioCtx.resume() } catch {} }
 }
-
-// Sblocca il contesto al primo gesto utente
-function _unlock() {
-  try { getAudioCtx().resume() } catch {}
-}
-document.addEventListener('click',   _unlock, { once: false, capture: true })
-document.addEventListener('keydown',  _unlock, { once: false, capture: true })
-document.addEventListener('touchend', _unlock, { once: false, capture: true })
+document.addEventListener('click',   _unlockAudio, { capture: true })
+document.addEventListener('keydown',  _unlockAudio, { capture: true })
+document.addEventListener('touchend', _unlockAudio, { capture: true })
 
 /** Suono di notifica generato via Web Audio API (nessun file esterno). */
 function playNotificationSound() {
+  if (!_audioUnlocked) return   // nessun gesto utente ancora
   try {
-    const ctx = getAudioCtx()
-    if (ctx.state !== 'running') return   // non ancora sbloccato dal browser
+    if (!_audioCtx) _audioCtx = new (window.AudioContext || window.webkitAudioContext)()
+    const ctx = _audioCtx
+    if (ctx.state === 'suspended') ctx.resume()
+    if (ctx.state !== 'running') return
 
     const play = (freq, startTime, duration, gain = 0.3) => {
       const osc = ctx.createOscillator()

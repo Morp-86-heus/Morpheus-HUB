@@ -1,6 +1,7 @@
 import os
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from starlette.middleware.base import BaseHTTPMiddleware
 from database import init_db, SessionLocal
 from routers import tickets, tecnici, lookup, stats
 from routers.clienti_diretti import router as clienti_diretti_router
@@ -23,18 +24,32 @@ from auth import create_default_admin
 
 app = FastAPI(title="Ticket Management API", version="2.0.0")
 
+ALLOWED_ORIGINS = [o.strip() for o in os.getenv("ALLOWED_ORIGINS", "").split(",") if o.strip()] or [
+    "http://localhost:3000",
+    "http://localhost:13000",
+    "http://morpheusrmm.tplinkdns.com:13000",
+    "http://morpheusrmm.tplinkdns.com",
+    "https://app.morpheushub.cloud",
+]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:3000",
-        "http://localhost:13000",
-        "http://morpheusrmm.tplinkdns.com:13000",
-        "http://morpheusrmm.tplinkdns.com",
-    ],
+    allow_origins=ALLOWED_ORIGINS,
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allow_headers=["Content-Type", "Authorization", "X-Organization-Id"],
 )
+
+
+class SecurityHeadersMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request: Request, call_next):
+        response = await call_next(request)
+        response.headers["X-Content-Type-Options"] = "nosniff"
+        response.headers["X-Frame-Options"] = "DENY"
+        response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+        return response
+
+app.add_middleware(SecurityHeadersMiddleware)
 
 app.include_router(auth_router)
 app.include_router(organizzazioni_router)

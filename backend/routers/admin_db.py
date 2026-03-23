@@ -79,9 +79,12 @@ def export_database(_=Depends(require_proprietario)):
     try:
         proc = subprocess.run(cmd, env=env, capture_output=True, timeout=120)
         if proc.returncode != 0:
-            raise HTTPException(500, f"pg_dump fallito: {proc.stderr.decode()}")
+            # Log dettaglio server-side, risposta generica al client
+            import logging
+            logging.getLogger(__name__).error("pg_dump error: %s", proc.stderr.decode(errors="replace"))
+            raise HTTPException(500, "Errore durante l'esportazione del database")
     except subprocess.TimeoutExpired:
-        raise HTTPException(500, "pg_dump: timeout superato (120s)")
+        raise HTTPException(500, "Esportazione non completata: timeout superato")
 
     sql_bytes = _strip_incompatible_set(proc.stdout)
     gz_bytes = gzip.compress(sql_bytes, compresslevel=6)
@@ -149,8 +152,8 @@ async def import_database(
     if file.filename.endswith(".gz"):
         try:
             content = gzip.decompress(content)
-        except Exception as e:
-            raise HTTPException(400, f"File .gz non valido: {e}")
+        except Exception:
+            raise HTTPException(400, "File .gz non valido o corrotto")
     content = _strip_incompatible_set(content)
 
     with tempfile.NamedTemporaryFile(delete=False, suffix=".sql") as tmp:
@@ -205,13 +208,13 @@ def db_info(db: Session = Depends(get_db), _=Depends(require_proprietario)):
     except Exception:
         alembic_version = "N/A"
 
-    # Conteggio righe delle tabelle principali
-    tables = [
+    # Conteggio righe delle tabelle principali (whitelist esplicita)
+    _ALLOWED_TABLES = {
         "tickets", "users", "organizzazioni", "articoli",
         "fatture", "clienti_diretti", "servizi", "opportunita",
-    ]
+    }
     counts = {}
-    for table in tables:
+    for table in _ALLOWED_TABLES:
         try:
             row = db.execute(text(f"SELECT COUNT(*) FROM {table}")).fetchone()
             counts[table] = row[0]
