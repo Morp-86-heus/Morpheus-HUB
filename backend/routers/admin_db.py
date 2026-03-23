@@ -5,13 +5,15 @@ import gzip
 import threading
 import uuid
 from urllib.parse import urlparse
-from datetime import datetime
-from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
+from datetime import datetime, timedelta, date
+from typing import Optional
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Query
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 from sqlalchemy import text
 from database import get_db
 from auth import require_proprietario
+from models import AuditLog, Organizzazione
 
 # Stato dei job di import in memoria {job_id: {status, message, started_at, finished_at}}
 _import_jobs: dict = {}
@@ -383,3 +385,70 @@ def system_stats(db: Session = Depends(get_db), _=Depends(require_proprietario))
         },
         "orgs_detail": orgs,
     }
+
+
+# ── Audit Log ─────────────────────────────────────────────────────────────────
+
+RETENTION_DAYS = 90
+
+@router.get("/audit-logs")
+def audit_logs(
+    org_id:   Optional[int]  = Query(None),
+    azione:   Optional[str]  = Query(None),
+    data_da:  Optional[date] = Query(None),
+    data_a:   Optional[date] = Query(None),
+    page:     int = Query(1, ge=1),
+    page_size:int = Query(50, ge=1, le=200),
+    db: Session = Depends(get_db),
+    _=Depends(require_proprietario),
+):
+    cutoff = datetime.utcnow() - timedelta(days=RETENTION_DAYS)
+    q = db.query(AuditLog).filter(AuditLog.timestamp >= cutoff)
+
+    if org_id:
+        q = q.filter(AuditLog.organizzazione_id == org_id)
+    if azione:
+        q = q.filter(AuditLog.azione.ilike(f"%{azione}%"))
+    if data_da:
+        q = q.filter(AuditLog.timestamp >= datetime.combine(data_da, datetime.min.time()))
+    if data_a:
+        q = q.filter(AuditLog.timestamp <= datetime.combine(data_a, datetime.max.time()))
+
+    total = q.count()
+    items = (
+        q.order_by(AuditLog.timestamp.desc())
+        .offset((page - 1) * page_size)
+        .limit(page_size)
+        .all()
+    )
+
+    return {
+        "total": total,
+        "page": page,
+        "page_size": page_size,
+        "retention_days": RETENTION_DAYS,
+        "items": [
+            {
+                "id":                 r.id,
+                "timestamp":          r.timestamp.isoformat() if r.timestamp else None,
+                "user_id":            r.user_id,
+                "user_nome":          r.user_nome,
+                "user_ruolo":         r.user_ruolo,
+                "organizzazione_id":  r.organizzazione_id,
+                "organizzazione_nome":r.organizzazione_nome,
+                "azione":             r.azione,
+                "risorsa_tipo":       r.risorsa_tipo,
+                "risorsa_id":         r.risorsa_id,
+                "dettagli":           r.dettagli,
+                "ip_address":         r.ip_address,
+            }
+            for r in items
+        ],
+    }
+
+
+@router.get("/audit-logs/orgs")
+def audit_orgs(db: Session = Depends(get_db), _=Depends(require_proprietario)):
+    """Lista organizzazioni per il filtro nella pagina audit."""
+    rows = db.query(Organizzazione).order_by(Organizzazione.nome).all()
+    return [{"id": r.id, "nome": r.nome} for r in rows]

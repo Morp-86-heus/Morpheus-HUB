@@ -13,6 +13,7 @@ from models import (
 )
 from auth import get_current_user, get_active_org_id
 from permissions import check_permission
+from utils.audit import log_action
 
 router = APIRouter(prefix="/api/vendite-prodotti", tags=["vendite-prodotti"])
 
@@ -229,6 +230,9 @@ def create_vendita(
 
     db.commit()
     db.refresh(v)
+    log_action("vendita.create", user=current_user, org_id=org_id,
+               risorsa_tipo="vendita", risorsa_id=v.id,
+               dettagli={"prodotto": v.prodotto_nome, "totale": v.totale, "stato": payload.stato})
     return _enrich(v)
 
 
@@ -311,6 +315,9 @@ def delete_vendita(
     v = db.query(VenditaProdotto).filter_by(id=vendita_id, organizzazione_id=org_id).first()
     if not v:
         raise HTTPException(status_code=404, detail="Vendita non trovata")
+    log_action("vendita.delete", user=current_user, org_id=org_id,
+               risorsa_tipo="vendita", risorsa_id=vendita_id,
+               dettagli={"prodotto": v.prodotto_nome, "totale": v.totale})
     _annulla_registrazione(v, db)
     db.delete(v)
     db.commit()

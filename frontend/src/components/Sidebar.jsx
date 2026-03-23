@@ -396,8 +396,9 @@ export default function Sidebar() {
             collapsed={collapsed}
             matchPaths={['/email-sistema', '/admin/database']}
           >
-            <NavItem to="/email-sistema" icon={<Icon name="email" />} label="Email sistema" collapsed={collapsed} onClick={onNav} indent />
-            <NavItem to="/admin/database" icon={<Icon name="database" />} label="Database" collapsed={collapsed} onClick={onNav} indent />
+            <NavItem to="/email-sistema"  icon={<Icon name="email" />}    label="Email sistema" collapsed={collapsed} onClick={onNav} indent />
+            <NavItem to="/admin/database"  icon={<Icon name="database" />}  label="Database"      collapsed={collapsed} onClick={onNav} indent />
+            <NavItem to="/admin/audit-log" icon={<Icon name="storico" />}   label="Audit Log"     collapsed={collapsed} onClick={onNav} indent />
           </NavGroup>
         )}
         {/* Gruppo Amministrazione — org attiva (amministratore e proprietario) */}

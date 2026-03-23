@@ -12,6 +12,7 @@ from auth import (
 )
 from permissions import check_permission
 from utils.plan import check_user_limit
+from utils.audit import log_action
 import schemas
 
 
@@ -26,13 +27,16 @@ router = APIRouter(prefix="/api/auth", tags=["auth"])
 
 
 @router.post("/login", response_model=schemas.Token)
-def login(req: schemas.LoginRequest, db: Session = Depends(get_db)):
+def login(req: schemas.LoginRequest, request: Request, db: Session = Depends(get_db)):
     user = db.query(User).filter(User.email == req.email).first()
     if not user or not verify_password(req.password, user.password_hash):
+        log_action("auth.login_failed", dettagli={"email": req.email}, request=request)
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Credenziali non valide")
     if not user.attivo:
+        log_action("auth.login_failed", user=user, dettagli={"motivo": "account_disabilitato"}, request=request)
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Account disabilitato")
     token = create_access_token(user.id, user.email, user.ruolo.value, remember_me=req.remember_me)
+    log_action("auth.login", user=user, org_id=user.organizzazione_id, request=request)
     return {"access_token": token, "token_type": "bearer", "user": user}
 
 
@@ -101,6 +105,10 @@ def create_user(
     db.add(user)
     db.commit()
     db.refresh(user)
+    org = db.query(Organizzazione).filter_by(id=org_id).first()
+    log_action("user.create", user=current_user, org_id=org_id, org_nome=org.nome if org else None,
+               risorsa_tipo="user", risorsa_id=user.id,
+               dettagli={"email": user.email, "ruolo": user.ruolo.value})
     return user
 
 
@@ -161,6 +169,18 @@ def update_user(
 
     db.commit()
     db.refresh(target)
+    # Determina tipo di azione
+    if body.attivo is False:
+        azione_audit = "user.deactivate"
+    elif body.attivo is True:
+        azione_audit = "user.activate"
+    else:
+        azione_audit = "user.update"
+    org = db.query(Organizzazione).filter_by(id=target.organizzazione_id).first()
+    log_action(azione_audit, user=current_user, org_id=target.organizzazione_id,
+               org_nome=org.nome if org else None,
+               risorsa_tipo="user", risorsa_id=target.id,
+               dettagli={"email": target.email})
     return target
 
 
@@ -182,6 +202,11 @@ def delete_user(
             raise HTTPException(status_code=403, detail="Accesso negato")
         if target.ruolo == RuoloEnum.proprietario:
             raise HTTPException(status_code=403, detail="Non puoi eliminare il proprietario")
+    org = db.query(Organizzazione).filter_by(id=target.organizzazione_id).first()
+    log_action("user.delete", user=current_user, org_id=target.organizzazione_id,
+               org_nome=org.nome if org else None,
+               risorsa_tipo="user", risorsa_id=target.id,
+               dettagli={"email": target.email, "ruolo": target.ruolo.value})
     db.delete(target)
     db.commit()
 

@@ -15,6 +15,7 @@ from database import get_db
 from models import Ticket, TicketChiusura, User, RuoloEnum, Articolo, MovimentoMagazzino, RegistrazioneContabile
 from auth import get_current_user, require_roles, get_active_org_id
 from permissions import check_permission
+from utils.audit import log_action
 import schemas
 import notifications as notif
 
@@ -202,6 +203,9 @@ def create_ticket(
     db.refresh(obj)
     notif.notifica_nuovo_ticket(db, org_id, obj, current_user)
     db.commit()
+    log_action("ticket.create", user=current_user, org_id=org_id,
+               risorsa_tipo="ticket", risorsa_id=obj.id,
+               dettagli={"nr_intervento": obj.nr_intervento, "cliente": obj.cliente, "stato": obj.stato})
     return obj
 
 
@@ -269,7 +273,7 @@ def update_ticket(
 def delete_ticket(
     ticket_id: int,
     db: Session = Depends(get_db),
-    _: User = Depends(_elimina),
+    current_user: User = Depends(_elimina),
     org_id: int = Depends(get_active_org_id),
 ):
     obj = db.query(Ticket).filter(Ticket.id == ticket_id, Ticket.organizzazione_id == org_id).first()
@@ -284,6 +288,9 @@ def delete_ticket(
         RegistrazioneContabile.riferimento_ticket_id == ticket_id,
         RegistrazioneContabile.stato != "annullata",
     ).update({"stato": "annullata"}, synchronize_session=False)
+    log_action("ticket.delete", user=current_user, org_id=org_id,
+               risorsa_tipo="ticket", risorsa_id=ticket_id,
+               dettagli={"nr_intervento": obj.nr_intervento, "cliente": obj.cliente})
     db.delete(obj)
     db.commit()
 
@@ -474,6 +481,10 @@ def chiudi_ticket(
     db.refresh(obj)
     notif.notifica_ticket_chiuso(db, org_id, obj, current_user)
     db.commit()
+    log_action("ticket.close", user=current_user, org_id=org_id,
+               risorsa_tipo="ticket", risorsa_id=ticket_id,
+               dettagli={"nr_intervento": obj.nr_intervento, "cliente": obj.cliente,
+                         "importo": payload.importo_totale})
     return obj
 
 

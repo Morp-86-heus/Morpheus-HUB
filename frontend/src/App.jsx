@@ -32,6 +32,7 @@ import EmailSistemaPage from './pages/EmailSistemaPage'
 import PrivacyPolicyPage from './pages/PrivacyPolicyPage'
 import CookiePolicyPage from './pages/CookiePolicyPage'
 import ProprietarioDashboardPage from './pages/ProprietarioDashboardPage'
+import AuditLogPage from './pages/AuditLogPage'
 import ContabilitaOrgPage from './pages/ContabilitaOrgPage'
 import VenditeProdottiPage from './pages/VenditeProdottiPage'
 
@@ -153,6 +154,7 @@ function AppRoutes() {
             <Route path="/profile" element={<ProfilePage />} />
             <Route path="/organizzazioni/:orgId/anagrafica" element={<OrgAnagraficaPage />} />
             <Route path="/admin/database" element={<AdminDatabasePage />} />
+            <Route path="/admin/audit-log" element={<AuditLogPage />} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </main>
