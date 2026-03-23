@@ -32,6 +32,8 @@ import EmailSistemaPage from './pages/EmailSistemaPage'
 import PrivacyPolicyPage from './pages/PrivacyPolicyPage'
 import CookiePolicyPage from './pages/CookiePolicyPage'
 import ProprietarioDashboardPage from './pages/ProprietarioDashboardPage'
+import ContabilitaOrgPage from './pages/ContabilitaOrgPage'
+import VenditeProdottiPage from './pages/VenditeProdottiPage'
 
 function AuthErrorToast() {
   const [messages, setMessages] = useState([])
@@ -186,6 +188,8 @@ function AppRoutes() {
             <Route path="/servizi" element={<ProtectedRoute allow="servizi.view"><PlanGate feature="servizi"><ServiziPage /></PlanGate></ProtectedRoute>} />
             <Route path="/abbonamenti" element={<ProtectedRoute allow="abbonamenti.view"><PlanGate feature="servizi"><AbbonamentiPage /></PlanGate></ProtectedRoute>} />
             <Route path="/funnel" element={<ProtectedRoute allow="funnel.view"><PlanGate feature="funnel"><FunnelPage /></PlanGate></ProtectedRoute>} />
+            <Route path="/vendite-prodotti" element={<ProtectedRoute><VenditeProdottiPage /></ProtectedRoute>} />
+            <Route path="/contabilita-org" element={<ProtectedRoute allow="contabilita.view"><PlanGate feature="contabilita"><ContabilitaOrgPage /></PlanGate></ProtectedRoute>} />
             <Route path="/calendario" element={<ProtectedRoute><PlanGate feature="calendario"><CalendarioPage /></PlanGate></ProtectedRoute>} />
             <Route path="/admin/database" element={<ProtectedRoute allowRoles={['proprietario']}><AdminDatabasePage /></ProtectedRoute>} />
             {/* Il proprietario con org attiva può anche tornare alla console org */}

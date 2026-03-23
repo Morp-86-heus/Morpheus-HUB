@@ -81,7 +81,9 @@ function ListinoForm({ initial, commitenti, onSave, onCancel }) {
 }
 
 function VoceForm({ initial, onSave, onCancel }) {
-  const [form, setForm] = useState({ descrizione: '', prezzo: '', unita_misura: '', ...initial })
+  // prezzo in form è stringa euro per l'input; initial.prezzo è integer centesimi dall'API
+  const prezzoEuro = initial?.prezzo != null ? (initial.prezzo / 100).toFixed(2) : ''
+  const [form, setForm] = useState({ descrizione: '', unita_misura: '', ...initial, prezzo: prezzoEuro })
   const [saving, setSaving] = useState(false)
   const [err, setErr] = useState('')
 
@@ -90,7 +92,8 @@ function VoceForm({ initial, onSave, onCancel }) {
     if (!form.descrizione.trim()) { setErr('Descrizione obbligatoria'); return }
     setSaving(true)
     try {
-      await onSave(form)
+      const prezzoVal = form.prezzo !== '' ? Math.round(parseFloat(String(form.prezzo).replace(',', '.')) * 100) : null
+      await onSave({ ...form, prezzo: isNaN(prezzoVal) ? null : prezzoVal })
     } catch (ex) {
       setErr(ex.response?.data?.detail || 'Errore salvataggio')
       setSaving(false)
@@ -118,7 +121,7 @@ function VoceForm({ initial, onSave, onCancel }) {
               type="number"
               min="0"
               step="0.01"
-              value={form.prezzo || ''}
+              value={form.prezzo}
               onChange={e => setForm(f => ({ ...f, prezzo: e.target.value }))}
               placeholder="0,00"
               className="w-full border border-gray-200 rounded-lg pl-7 pr-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -304,7 +307,7 @@ export default function ListiniPage() {
                                 <tr key={v.id} className="group">
                                   <td className="py-1.5 text-gray-700">{v.descrizione}</td>
                                   <td className="py-1.5 text-right text-gray-600 font-medium">
-                                  {v.prezzo ? `€ ${parseFloat(v.prezzo).toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : '—'}
+                                  {v.prezzo != null ? `€ ${(v.prezzo / 100).toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : '—'}
                                 </td>
                                   <td className="py-1.5 text-right text-gray-400">{v.unita_misura || '—'}</td>
                                   {isAdmin && (

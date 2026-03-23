@@ -103,6 +103,14 @@ const CATEGORIE = [
       { code: 'funnel.manage', label: 'Gestire funnel vendite',      desc: 'Creazione, modifica e spostamento delle opportunità nel funnel' },
     ],
   },
+  {
+    label: 'Contabilità',
+    icon: '🧾',
+    permessi: [
+      { code: 'contabilita.view',   label: 'Visualizzare contabilità', desc: 'Accesso alle registrazioni contabili, dashboard e trend mensile' },
+      { code: 'contabilita.manage', label: 'Gestire contabilità',      desc: 'Aggiunta voci manuali, sync da ticket e contratti, cambio stato' },
+    ],
+  },
 ]
 
 const RUOLI = [

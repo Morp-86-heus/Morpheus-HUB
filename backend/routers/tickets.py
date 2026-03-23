@@ -12,7 +12,7 @@ import base64
 import uuid as uuid_lib
 
 from database import get_db
-from models import Ticket, TicketChiusura, User, RuoloEnum, Articolo, MovimentoMagazzino
+from models import Ticket, TicketChiusura, User, RuoloEnum, Articolo, MovimentoMagazzino, RegistrazioneContabile
 from auth import get_current_user, require_roles, get_active_org_id
 from permissions import check_permission
 import schemas
@@ -275,6 +275,15 @@ def delete_ticket(
     obj = db.query(Ticket).filter(Ticket.id == ticket_id, Ticket.organizzazione_id == org_id).first()
     if not obj:
         raise HTTPException(status_code=404, detail="Ticket non trovato")
+    # Sgancia i movimenti magazzino (FK senza ON DELETE SET NULL)
+    db.query(MovimentoMagazzino).filter(
+        MovimentoMagazzino.riferimento_ticket_id == ticket_id,
+    ).update({"riferimento_ticket_id": None}, synchronize_session=False)
+    # Annulla le registrazioni contabili associate
+    db.query(RegistrazioneContabile).filter(
+        RegistrazioneContabile.riferimento_ticket_id == ticket_id,
+        RegistrazioneContabile.stato != "annullata",
+    ).update({"stato": "annullata"}, synchronize_session=False)
     db.delete(obj)
     db.commit()
 

@@ -271,7 +271,6 @@ class Ticket(Base):
     nr_progressivo = Column(Integer, nullable=True)
     dispositivo = Column(String(200), nullable=True)
     note_intervento = Column(Text, nullable=True)
-    importo = Column(String(50), nullable=True)
     organizzazione_id = Column(Integer, ForeignKey("organizzazioni.id"), nullable=True, index=True)
     created_at = Column(DateTime, server_default=func.now())
     updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())
@@ -308,7 +307,7 @@ class ListinoVoce(Base):
     id = Column(Integer, primary_key=True, index=True)
     listino_id = Column(Integer, ForeignKey("listini.id"), nullable=False, index=True)
     descrizione = Column(String(300), nullable=False)
-    prezzo = Column(String(50), nullable=True)
+    prezzo = Column(Integer, nullable=True)   # centesimi, es. 5000 = €50,00
     unita_misura = Column(String(50), nullable=True)
     created_at = Column(DateTime, server_default=func.now())
 
@@ -571,6 +570,65 @@ class ContrattoServizio(Base):
     updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())
     cliente = relationship("ClienteDiretto", back_populates="contratti")
     servizio = relationship("Servizio", back_populates="contratti")
+
+
+class RegistrazioneContabile(Base):
+    """Registrazioni contabili per organizzazione — alimentate da ticket e contratti."""
+    __tablename__ = "registrazioni_contabili"
+
+    id                       = Column(Integer, primary_key=True, index=True)
+    organizzazione_id        = Column(Integer, ForeignKey("organizzazioni.id", ondelete="CASCADE"), nullable=False, index=True)
+    tipo                     = Column(String(20), nullable=False, default="manuale")  # ticket | servizio | manuale
+    riferimento_ticket_id    = Column(Integer, ForeignKey("tickets.id", ondelete="SET NULL"), nullable=True, index=True)
+    riferimento_contratto_id = Column(Integer, ForeignKey("contratti_servizi.id", ondelete="SET NULL"), nullable=True, index=True)
+    cliente_nome             = Column(String(200), nullable=True)
+    descrizione              = Column(String(300), nullable=False)
+    importo                  = Column(Integer, nullable=False, default=0)   # centesimi
+    data_competenza          = Column(Date, nullable=False)
+    stato                    = Column(String(20), nullable=False, default="emessa")  # emessa | incassata | annullata
+    note                     = Column(Text, nullable=True)
+    created_at               = Column(DateTime, server_default=func.now())
+    updated_at               = Column(DateTime, server_default=func.now(), onupdate=func.now())
+
+    ticket   = relationship("Ticket",           foreign_keys=[riferimento_ticket_id])
+    contratto = relationship("ContrattoServizio", foreign_keys=[riferimento_contratto_id])
+
+    __table_args__ = (
+        Index("ix_reg_contabili_org_data", "organizzazione_id", "data_competenza"),
+    )
+
+
+class StatoVendita(str, enum.Enum):
+    preventivo = "preventivo"
+    confermata = "confermata"
+    consegnata = "consegnata"
+    annullata  = "annullata"
+
+
+class VenditaProdotto(Base):
+    """Vendita di un prodotto/servizio una-tantum a un cliente diretto."""
+    __tablename__ = "vendite_prodotti"
+
+    id                       = Column(Integer, primary_key=True, index=True)
+    organizzazione_id        = Column(Integer, ForeignKey("organizzazioni.id", ondelete="CASCADE"), nullable=False, index=True)
+    cliente_id               = Column(Integer, ForeignKey("clienti_diretti.id", ondelete="SET NULL"), nullable=True, index=True)
+    cliente_nome             = Column(String(200), nullable=True)          # snapshot al momento della vendita
+    servizio_id              = Column(Integer, ForeignKey("servizi.id", ondelete="SET NULL"), nullable=True)
+    prodotto_nome            = Column(String(200), nullable=False)         # snapshot nome prodotto
+    quantita                 = Column(Integer, nullable=False, default=1)
+    prezzo_unitario          = Column(Integer, nullable=False, default=0)  # centesimi
+    sconto_pct               = Column(Integer, nullable=True, default=0)   # 0-100
+    totale                   = Column(Integer, nullable=False, default=0)  # centesimi
+    data_vendita             = Column(Date, nullable=False)
+    stato                    = Column(Enum(StatoVendita), nullable=False, default=StatoVendita.preventivo, index=True)
+    note                     = Column(Text, nullable=True)
+    registrazione_contabile_id = Column(Integer, ForeignKey("registrazioni_contabili.id", ondelete="SET NULL"), nullable=True)
+    created_at               = Column(DateTime, server_default=func.now())
+    updated_at               = Column(DateTime, server_default=func.now(), onupdate=func.now())
+
+    cliente       = relationship("ClienteDiretto", foreign_keys=[cliente_id])
+    servizio      = relationship("Servizio", foreign_keys=[servizio_id])
+    registrazione = relationship("RegistrazioneContabile", foreign_keys=[registrazione_contabile_id])
 
 
 class FaseOpportunita(str, enum.Enum):

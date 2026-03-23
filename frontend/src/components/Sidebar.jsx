@@ -147,6 +147,12 @@ const Icon = ({ name, className = "w-5 h-5" }) => {
           d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
       </svg>
     ),
+    vendite: (
+      <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+          d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
+      </svg>
+    ),
   }
   return icons[name] || null
 }
@@ -240,13 +246,14 @@ export default function Sidebar() {
   const showUtenti = can('manage_users')
 
   // Permessi sidebar
-  const showMagazzino   = can('magazzino.view')
-  const showStorico     = can('storico.view')
-  const showAnagrafiche = can('anagrafiche.view')
-  const showListini     = can('listini.view')
-  const showServizi     = can('servizi.view')
-  const showAbbonamenti = can('abbonamenti.view')
-  const showFunnel      = can('funnel.view')
+  const showMagazzino    = can('magazzino.view')
+  const showStorico      = can('storico.view')
+  const showAnagrafiche  = can('anagrafiche.view')
+  const showListini      = can('listini.view')
+  const showServizi      = can('servizi.view')
+  const showAbbonamenti  = can('abbonamenti.view')
+  const showFunnel       = can('funnel.view')
+  const showContabilita  = can('contabilita.view')
   const showCustomerManager = showAnagrafiche || showListini || showServizi || showAbbonamenti || showFunnel
 
   // Nav items per la console proprietario (senza activeOrg)
@@ -358,14 +365,19 @@ export default function Sidebar() {
             icon={<Icon name="customers" />}
             label="Customer Manager"
             collapsed={collapsed}
-            matchPaths={['/anagrafiche', '/listini', '/servizi', '/abbonamenti', '/funnel']}
+            matchPaths={['/anagrafiche', '/listini', '/servizi', '/abbonamenti', '/funnel', '/vendite-prodotti']}
           >
-            {showAnagrafiche && <NavItem to="/anagrafiche" icon={<Icon name="anagrafiche" />} label="Anagrafiche" collapsed={collapsed} onClick={onNav} indent />}
-            {showListini    && <NavItem to="/listini"     icon={<Icon name="listini" />}     label="Listini Prezzi"    collapsed={collapsed} onClick={onNav} indent feature="listini" />}
-            {showServizi    && <NavItem to="/servizi"     icon={<Icon name="listini" />}     label="Catalogo Servizi"  collapsed={collapsed} onClick={onNav} indent feature="servizi" />}
-            {showAbbonamenti && <NavItem to="/abbonamenti" icon={<Icon name="storico" />}   label="Abbonamenti"       collapsed={collapsed} onClick={onNav} indent feature="servizi" />}
-            {showFunnel     && <NavItem to="/funnel"      icon={<Icon name="funnel" />}      label="Funnel Vendite"    collapsed={collapsed} onClick={onNav} indent feature="funnel" />}
+            {showAnagrafiche  && <NavItem to="/anagrafiche"      icon={<Icon name="anagrafiche" />}  label="Anagrafiche"        collapsed={collapsed} onClick={onNav} indent />}
+            {showListini      && <NavItem to="/listini"          icon={<Icon name="listini" />}       label="Listini Prezzi"     collapsed={collapsed} onClick={onNav} indent feature="listini" />}
+            {showServizi      && <NavItem to="/servizi"          icon={<Icon name="listini" />}       label="Catalogo Servizi"   collapsed={collapsed} onClick={onNav} indent feature="servizi" />}
+            {showAbbonamenti  && <NavItem to="/abbonamenti"      icon={<Icon name="storico" />}       label="Abbonamenti"        collapsed={collapsed} onClick={onNav} indent feature="servizi" />}
+                                 <NavItem to="/vendite-prodotti" icon={<Icon name="vendite" />}       label="Vendite Prodotti"   collapsed={collapsed} onClick={onNav} indent />
+            {showFunnel       && <NavItem to="/funnel"           icon={<Icon name="funnel" />}        label="Funnel Vendite"     collapsed={collapsed} onClick={onNav} indent feature="funnel" />}
           </NavGroup>
+        )}
+        {/* Contabilità */}
+        {!(isProprietario && !activeOrg) && showContabilita && (
+          <NavItem to="/contabilita-org" icon={<Icon name="contabilita" />} label="Contabilità" collapsed={collapsed} onClick={onNav} feature="contabilita" />
         )}
         {/* Statistiche */}
         {!(isProprietario && !activeOrg) && can('view_stats') && (

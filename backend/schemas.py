@@ -176,7 +176,6 @@ class TicketBase(BaseModel):
     nr_progressivo: Optional[int] = None
     dispositivo: Optional[str] = None
     note_intervento: Optional[str] = None
-    importo: Optional[str] = None
 
 
 class TicketCreate(TicketBase):
@@ -374,7 +373,7 @@ class TicketOutWithChiusura(TicketOut):
 # ── Listini prezzi ────────────────────────────────────────────────────────────
 class ListinoVoceCreate(BaseModel):
     descrizione: str
-    prezzo: Optional[str] = None
+    prezzo: Optional[int] = None   # centesimi
     unita_misura: Optional[str] = None
 
 
@@ -383,7 +382,7 @@ class ListinoVoceOut(BaseModel):
     id: int
     listino_id: int
     descrizione: str
-    prezzo: Optional[str] = None
+    prezzo: Optional[int] = None   # centesimi
     unita_misura: Optional[str] = None
 
 

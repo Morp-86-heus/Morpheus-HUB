@@ -30,6 +30,7 @@ services:
       db:
         condition: service_healthy
     volumes:
+      - ./backend:/app
       - ./data:/app/data
       - uploads_data:/app/uploads
     restart: unless-stopped

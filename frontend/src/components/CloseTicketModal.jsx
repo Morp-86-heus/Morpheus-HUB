@@ -909,7 +909,7 @@ export default function CloseTicketModal({ ticket, onClose, onClosed }) {
     setPrestazioni(prev => {
       const exists = prev.find(p => p.voce_id === voce.id)
       if (exists) return prev.filter(p => p.voce_id !== voce.id)
-      return [...prev, { voce_id: voce.id, descrizione: voce.descrizione, prezzo: voce.prezzo, unita_misura: voce.unita_misura, quantita: 1 }]
+      return [...prev, { voce_id: voce.id, descrizione: voce.descrizione, prezzo: voce.prezzo != null ? (voce.prezzo / 100).toFixed(2) : null, unita_misura: voce.unita_misura, quantita: 1 }]
     })
   }
 
@@ -917,9 +917,10 @@ export default function CloseTicketModal({ ticket, onClose, onClosed }) {
     setPrestazioni(prev => prev.map(p => p.voce_id === voce_id ? { ...p, quantita: parseFloat(quantita) || 1 } : p))
   }
 
+  // prezzo è stringa euro (es. "50.00"); totale in euro
   const totale = prestazioni.reduce((sum, p) => {
-    const prezzo = parseFloat(p.prezzo) || 0
-    return sum + prezzo * (p.quantita || 1)
+    const euros = parseFloat(String(p.prezzo || '0').replace(',', '.')) || 0
+    return sum + euros * (p.quantita || 1)
   }, 0)
 
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }))
@@ -953,7 +954,8 @@ export default function CloseTicketModal({ ticket, onClose, onClosed }) {
       setSaved(true)
       onClosed && onClosed()
     } catch (err) {
-      setError(err.response?.data?.detail || 'Errore durante la chiusura')
+      const det = err.response?.data?.detail
+      setError(typeof det === 'string' ? det : 'Errore durante la chiusura')
     } finally {
       setSaving(false)
     }
@@ -1095,7 +1097,7 @@ export default function CloseTicketModal({ ticket, onClose, onClosed }) {
                       <tbody className="divide-y divide-gray-100">
                         {voceListino.voci.map(v => {
                           const sel = prestazioni.find(p => p.voce_id === v.id)
-                          const sub = sel ? (parseFloat(v.prezzo) || 0) * (sel.quantita || 1) : null
+                          const sub = sel ? ((v.prezzo || 0) / 100) * (sel.quantita || 1) : null
                           return (
                             <tr key={v.id} className={sel ? 'bg-blue-50' : 'hover:bg-gray-50'}>
                               <td className="px-3 py-2 text-center">
@@ -1107,7 +1109,7 @@ export default function CloseTicketModal({ ticket, onClose, onClosed }) {
                                 {v.unita_misura && <span className="text-gray-400 text-xs ml-1">/ {v.unita_misura}</span>}
                               </td>
                               <td className="px-3 py-2 text-right font-mono text-gray-700">
-                                {v.prezzo ? `€ ${v.prezzo}` : '—'}
+                                {v.prezzo != null ? `€ ${(v.prezzo / 100).toFixed(2)}` : '—'}
                               </td>
                               <td className="px-3 py-2 text-center">
                                 {sel ? (
