@@ -9,14 +9,26 @@ from sqlalchemy import extract
 from database import get_db
 from models import (
     VenditaProdotto, StatoVendita, ClienteDiretto, Servizio,
-    RegistrazioneContabile, User, RuoloEnum,
+    RegistrazioneContabile, User,
 )
-from auth import get_current_user, require_roles, get_active_org_id
+from auth import get_current_user, get_active_org_id
+from permissions import check_permission
 
 router = APIRouter(prefix="/api/vendite-prodotti", tags=["vendite-prodotti"])
 
-_comm = require_roles(RuoloEnum.proprietario, RuoloEnum.amministratore, RuoloEnum.commerciale)
-_tutti = require_roles(RuoloEnum.proprietario, RuoloEnum.amministratore, RuoloEnum.commerciale, RuoloEnum.tecnico)
+
+def _require_view(user: User, org_id: int, db: Session):
+    if user.ruolo == RuoloEnum.proprietario:
+        return
+    if not check_permission(user.ruolo, "vendite.view", org_id, db):
+        raise HTTPException(403, "Accesso negato: permesso vendite.view richiesto")
+
+
+def _require_manage(user: User, org_id: int, db: Session):
+    if user.ruolo == RuoloEnum.proprietario:
+        return
+    if not check_permission(user.ruolo, "vendite.manage", org_id, db):
+        raise HTTPException(403, "Accesso negato: permesso vendite.manage richiesto")
 
 
 # ── Schemas ───────────────────────────────────────────────────────────────────
@@ -114,9 +126,10 @@ def list_vendite(
     page: int = 1,
     page_size: int = 30,
     db: Session = Depends(get_db),
-    current_user: User = Depends(_tutti),
+    current_user: User = Depends(get_current_user),
     org_id: int = Depends(get_active_org_id),
 ):
+    _require_view(current_user, org_id, db)
     q = (
         db.query(VenditaProdotto)
         .filter(VenditaProdotto.organizzazione_id == org_id)
@@ -150,9 +163,10 @@ def list_vendite(
 def stats_vendite(
     anno: Optional[int] = None,
     db: Session = Depends(get_db),
-    current_user: User = Depends(_tutti),
+    current_user: User = Depends(get_current_user),
     org_id: int = Depends(get_active_org_id),
 ):
+    _require_view(current_user, org_id, db)
     if not anno:
         anno = date.today().year
     vendite = db.query(VenditaProdotto).filter(
@@ -177,9 +191,10 @@ def stats_vendite(
 def create_vendita(
     payload: VenditaIn,
     db: Session = Depends(get_db),
-    current_user: User = Depends(_comm),
+    current_user: User = Depends(get_current_user),
     org_id: int = Depends(get_active_org_id),
 ):
+    _require_manage(current_user, org_id, db)
     totale = _calcola_totale(payload.prezzo_unitario, payload.quantita, payload.sconto_pct)
 
     # Snapshot nome cliente
@@ -222,9 +237,10 @@ def update_vendita(
     vendita_id: int,
     payload: VenditaIn,
     db: Session = Depends(get_db),
-    current_user: User = Depends(_comm),
+    current_user: User = Depends(get_current_user),
     org_id: int = Depends(get_active_org_id),
 ):
+    _require_manage(current_user, org_id, db)
     v = db.query(VenditaProdotto).filter_by(id=vendita_id, organizzazione_id=org_id).first()
     if not v:
         raise HTTPException(status_code=404, detail="Vendita non trovata")
@@ -288,9 +304,10 @@ def update_vendita(
 def delete_vendita(
     vendita_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(_comm),
+    current_user: User = Depends(get_current_user),
     org_id: int = Depends(get_active_org_id),
 ):
+    _require_manage(current_user, org_id, db)
     v = db.query(VenditaProdotto).filter_by(id=vendita_id, organizzazione_id=org_id).first()
     if not v:
         raise HTTPException(status_code=404, detail="Vendita non trovata")

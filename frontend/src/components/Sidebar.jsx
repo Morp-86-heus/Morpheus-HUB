@@ -254,7 +254,8 @@ export default function Sidebar() {
   const showAbbonamenti  = can('abbonamenti.view')
   const showFunnel       = can('funnel.view')
   const showContabilita  = can('contabilita.view')
-  const showCustomerManager = showAnagrafiche || showListini || showServizi || showAbbonamenti || showFunnel
+  const showVendite      = can('vendite.view')
+  const showCustomerManager = showAnagrafiche || showListini || showServizi || showAbbonamenti || showFunnel || showVendite
 
   // Nav items per la console proprietario (senza activeOrg)
   const adminNavItems = [
@@ -371,7 +372,7 @@ export default function Sidebar() {
             {showListini      && <NavItem to="/listini"          icon={<Icon name="listini" />}       label="Listini Prezzi"     collapsed={collapsed} onClick={onNav} indent feature="listini" />}
             {showServizi      && <NavItem to="/servizi"          icon={<Icon name="listini" />}       label="Catalogo Servizi"   collapsed={collapsed} onClick={onNav} indent feature="servizi" />}
             {showAbbonamenti  && <NavItem to="/abbonamenti"      icon={<Icon name="storico" />}       label="Abbonamenti"        collapsed={collapsed} onClick={onNav} indent feature="servizi" />}
-                                 <NavItem to="/vendite-prodotti" icon={<Icon name="vendite" />}       label="Vendite Prodotti"   collapsed={collapsed} onClick={onNav} indent />
+            {showVendite      && <NavItem to="/vendite-prodotti" icon={<Icon name="vendite" />}       label="Vendite Prodotti"   collapsed={collapsed} onClick={onNav} indent />}
             {showFunnel       && <NavItem to="/funnel"           icon={<Icon name="funnel" />}        label="Funnel Vendite"     collapsed={collapsed} onClick={onNav} indent feature="funnel" />}
           </NavGroup>
         )}

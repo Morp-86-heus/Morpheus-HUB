@@ -40,6 +40,8 @@ DEFAULT_PERMISSIONS: Dict[str, Dict[str, bool]] = {
         "funnel.manage":                True,
         "contabilita.view":             True,
         "contabilita.manage":           True,
+        "vendite.view":                 True,
+        "vendite.manage":               True,
     },
     "commerciale": {
         "ticket.view":                  True,
@@ -76,6 +78,8 @@ DEFAULT_PERMISSIONS: Dict[str, Dict[str, bool]] = {
         "funnel.manage":                True,
         "contabilita.view":             True,
         "contabilita.manage":           False,
+        "vendite.view":                 True,
+        "vendite.manage":               True,
     },
     "tecnico": {
         "ticket.view":                  True,
@@ -112,6 +116,8 @@ DEFAULT_PERMISSIONS: Dict[str, Dict[str, bool]] = {
         "funnel.manage":                False,
         "contabilita.view":             False,
         "contabilita.manage":           False,
+        "vendite.view":                 False,
+        "vendite.manage":               False,
     },
 }
 
