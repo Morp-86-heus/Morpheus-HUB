@@ -49,6 +49,14 @@ def get_current_user(
     user = db.query(User).filter(User.id == user_id, User.attivo == True).first()
     if not user:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Utente non trovato o disabilitato")
+    # Aggiorna last_seen (throttle: solo se > 60s dall'ultimo aggiornamento)
+    now = datetime.now(timezone.utc).replace(tzinfo=None)
+    if user.last_seen is None or (now - user.last_seen).total_seconds() > 60:
+        db.execute(
+            __import__('sqlalchemy').text("UPDATE users SET last_seen = :now WHERE id = :id"),
+            {"now": now, "id": user.id}
+        )
+        db.commit()
     return user
 
 

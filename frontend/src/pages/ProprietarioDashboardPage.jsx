@@ -146,6 +146,69 @@ function ScadenzeAlert({ presto, scadute }) {
   )
 }
 
+// ── Utenti online ─────────────────────────────────────────────────────────────
+
+function OnlineUsersCard({ utenti }) {
+  const count = utenti?.length ?? 0
+
+  const RUOLO_LABELS = {
+    amministratore: 'Admin',
+    tecnico: 'Tecnico',
+    commerciale: 'Commerciale',
+    operatore: 'Operatore',
+  }
+  const RUOLO_COLORS = {
+    amministratore: 'bg-purple-100 text-purple-700',
+    tecnico: 'bg-blue-100 text-blue-700',
+    commerciale: 'bg-green-100 text-green-700',
+    operatore: 'bg-gray-100 text-gray-600',
+  }
+
+  function fmtTime(iso) {
+    if (!iso) return '—'
+    const d = new Date(iso + 'Z')
+    const sec = Math.floor((Date.now() - d.getTime()) / 1000)
+    if (sec < 60) return 'adesso'
+    if (sec < 3600) return `${Math.floor(sec / 60)} min fa`
+    return d.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' })
+  }
+
+  return (
+    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+      <div className="px-5 py-4 border-b border-gray-50 flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <div className={`w-2 h-2 rounded-full shrink-0 ${count > 0 ? 'bg-green-400 animate-pulse' : 'bg-gray-300'}`} />
+          <h3 className="text-sm font-semibold text-gray-700">Utenti online</h3>
+        </div>
+        <span className={`text-sm font-bold ${count > 0 ? 'text-green-600' : 'text-gray-400'}`}>{count}</span>
+      </div>
+      {count === 0 ? (
+        <div className="px-5 py-8 text-center text-sm text-gray-400">Nessun utente online</div>
+      ) : (
+        <ul className="divide-y divide-gray-50">
+          {utenti.map(u => (
+            <li key={u.id} className="flex items-center gap-3 px-5 py-3">
+              <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-xs font-bold text-gray-500 shrink-0">
+                {u.nome.charAt(0).toUpperCase()}
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-gray-900 truncate">{u.nome}</p>
+                <p className="text-xs text-gray-400 truncate">{u.org_nome}</p>
+              </div>
+              <div className="flex flex-col items-end gap-1 shrink-0">
+                <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${RUOLO_COLORS[u.ruolo] || 'bg-gray-100 text-gray-500'}`}>
+                  {RUOLO_LABELS[u.ruolo] || u.ruolo}
+                </span>
+                <span className="text-[10px] text-gray-400">{fmtTime(u.last_seen)}</span>
+              </div>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  )
+}
+
 // ── Tabella organizzazioni ────────────────────────────────────────────────────
 
 function OrgsTable({ orgs }) {
@@ -234,6 +297,7 @@ export default function ProprietarioDashboardPage() {
   )
 
   const { organizzazioni: orgs, utenti, tickets, database, orgs_detail } = data
+  const utentiOnline = utenti?.online ?? []
 
   return (
     <div className="space-y-6">
@@ -261,7 +325,7 @@ export default function ProprietarioDashboardPage() {
       <ScadenzeAlert presto={orgs.scadenza_presto} scadute={orgs.scadute} />
 
       {/* KPI cards */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
         <KpiCard
           label="Licenze attive"
           value={orgs.licenze_attive}
@@ -283,6 +347,13 @@ export default function ProprietarioDashboardPage() {
           icon={<svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" /></svg>}
         />
         <KpiCard
+          label="Online ora"
+          value={utentiOnline.length}
+          sub="ultimi 5 minuti"
+          color={utentiOnline.length > 0 ? 'green' : 'gray'}
+          icon={<svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5.636 18.364a9 9 0 010-12.728m12.728 0a9 9 0 010 12.728M12 12a3 3 0 100-6 3 3 0 000 6zm0 0v1m0 4h.01" /></svg>}
+        />
+        <KpiCard
           label="Ticket aperti"
           value={fmt(tickets.aperti)}
           sub={`${fmt(tickets.totale)} totali`}
@@ -291,10 +362,11 @@ export default function ProprietarioDashboardPage() {
         />
       </div>
 
-      {/* Piano + DB */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      {/* Piano + DB + Utenti online */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <PianoBar perPiano={orgs.per_piano} />
         <DbHealthCard db={database} />
+        <OnlineUsersCard utenti={utentiOnline} />
       </div>
 
       {/* Tabella organizzazioni */}

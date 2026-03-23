@@ -115,6 +115,7 @@ class User(Base):
     attivo = Column(Boolean, default=True)
     organizzazione_id = Column(Integer, ForeignKey("organizzazioni.id"), nullable=True, index=True)
     created_at = Column(DateTime, server_default=func.now())
+    last_seen = Column(DateTime, nullable=True)
     password_reset_token = Column(String(255), nullable=True)
     password_reset_expiry = Column(DateTime, nullable=True)
 

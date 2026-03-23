@@ -303,6 +303,30 @@ def system_stats(db: Session = Depends(get_db), _=Depends(require_proprietario))
     )).fetchone()
     utenti_totali = utenti_row[0] if utenti_row else 0
 
+    # ── Utenti online (last_seen negli ultimi 5 minuti) ───────────────────────
+    online_rows = db.execute(text("""
+        SELECT u.id, u.nome, u.cognome, u.ruolo, u.organizzazione_id, u.last_seen,
+               o.nome AS org_nome
+        FROM users u
+        LEFT JOIN organizzazioni o ON o.id = u.organizzazione_id
+        WHERE u.attivo = true
+          AND u.ruolo != 'proprietario'
+          AND u.last_seen >= NOW() - INTERVAL '5 minutes'
+        ORDER BY u.last_seen DESC
+    """)).fetchall()
+
+    utenti_online = [
+        {
+            "id": r.id,
+            "nome": f"{r.nome} {r.cognome or ''}".strip(),
+            "ruolo": r.ruolo,
+            "org_nome": r.org_nome or "—",
+            "organizzazione_id": r.organizzazione_id,
+            "last_seen": r.last_seen.isoformat() if r.last_seen else None,
+        }
+        for r in online_rows
+    ]
+
     # ── Ticket totali nel sistema ─────────────────────────────────────────────
     ticket_row = db.execute(text("SELECT COUNT(*) FROM tickets")).fetchone()
     ticket_totali = ticket_row[0] if ticket_row else 0
@@ -343,6 +367,7 @@ def system_stats(db: Session = Depends(get_db), _=Depends(require_proprietario))
         },
         "utenti": {
             "totale_attivi": utenti_totali,
+            "online": utenti_online,
         },
         "tickets": {
             "totale": ticket_totali,
