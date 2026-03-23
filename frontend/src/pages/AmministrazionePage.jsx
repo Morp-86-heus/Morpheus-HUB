@@ -104,6 +104,14 @@ const CATEGORIE = [
     ],
   },
   {
+    label: 'Vendite Prodotti',
+    icon: '🛍️',
+    permessi: [
+      { code: 'vendite.view',   label: 'Visualizzare vendite prodotti', desc: 'Accesso alla lista delle vendite e alle statistiche' },
+      { code: 'vendite.manage', label: 'Gestire vendite prodotti',      desc: 'Creazione, modifica ed eliminazione delle vendite' },
+    ],
+  },
+  {
     label: 'Contabilità',
     icon: '🧾',
     permessi: [
