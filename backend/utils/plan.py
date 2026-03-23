@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 
 PLAN_FEATURES = {
     'base':         {'magazzino': False, 'listini': False, 'calendario': False, 'funnel': False, 'servizi': False, 'contabilita': False},
-    'professional': {'magazzino': True,  'listini': True,  'calendario': True,  'funnel': True,  'servizi': True,  'contabilita': False},
+    'professional': {'magazzino': True,  'listini': True,  'calendario': True,  'funnel': True,  'servizi': True,  'contabilita': True},
     'enterprise':   {'magazzino': True,  'listini': True,  'calendario': True,  'funnel': True,  'servizi': True,  'contabilita': True},
 }
 

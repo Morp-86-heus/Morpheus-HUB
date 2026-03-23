@@ -119,7 +119,7 @@ export function AuthProvider({ children }) {
 
   const PLAN_FEATURES = {
     base:         { magazzino: false, listini: false, calendario: false, funnel: false, servizi: false, contabilita: false },
-    professional: { magazzino: true,  listini: true,  calendario: true,  funnel: true,  servizi: true,  contabilita: false },
+    professional: { magazzino: true,  listini: true,  calendario: true,  funnel: true,  servizi: true,  contabilita: true  },
     enterprise:   { magazzino: true,  listini: true,  calendario: true,  funnel: true,  servizi: true,  contabilita: true  },
   }
 
