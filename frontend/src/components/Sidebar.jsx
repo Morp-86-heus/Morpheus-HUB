@@ -278,22 +278,15 @@ export default function Sidebar() {
         {collapsed ? (
           <button
             onClick={() => setCollapsed(false)}
-            className="w-7 h-7 rounded-md bg-orange-500 flex items-center justify-center shrink-0 hover:bg-orange-600 transition-colors hidden md:flex"
+            className="flex items-center justify-center shrink-0 hover:opacity-80 transition-opacity hidden md:flex"
             title="Espandi"
           >
-            <span className="block rotate-180">
-              <Icon name="chevron" className="w-4 h-4 text-white" />
-            </span>
+            <img src="/MorpheusHub_Icon.svg" alt="Morpheus HUB" className="w-8 h-8 rounded-lg" />
           </button>
         ) : (
           <>
-            <div className="flex items-center gap-2">
-              <span className="w-7 h-7 rounded-md bg-orange-500 flex items-center justify-center shrink-0">
-                <span className="text-white font-black text-sm leading-none">M</span>
-              </span>
-              <span className="font-bold text-gray-800 text-sm leading-tight">
-                Morpheus<br />HUB
-              </span>
+            <div className="flex items-center">
+              <img src="/MorpheusHub_Logo.svg" alt="Morpheus HUB" className="h-9" />
             </div>
             <button
               onClick={() => setCollapsed(true)}

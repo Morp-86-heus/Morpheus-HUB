@@ -1,0 +1,120 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 80" width="320" height="80">
+  <defs>
+    <!-- Glow filter for wordmark -->
+    <filter id="logoGlow" x="-20%" y="-40%" width="140%" height="180%">
+      <feGaussianBlur stdDeviation="1.5" result="b"/>
+      <feMerge>
+        <feMergeNode in="b"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+
+  <!-- ── MATRIX ICON (embedded 80×80 → fits 64×64 at y=8) ── -->
+  <svg x="0" y="8" width="64" height="64" viewBox="0 0 80 80" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <filter id="haloL" x="-60%" y="-60%" width="220%" height="220%">
+        <feGaussianBlur stdDeviation="5" result="b1"/>
+        <feGaussianBlur stdDeviation="2" result="b2"/>
+        <feMerge>
+          <feMergeNode in="b1"/>
+          <feMergeNode in="b2"/>
+          <feMergeNode in="SourceGraphic"/>
+        </feMerge>
+      </filter>
+      <filter id="nodeGlowL" x="-80%" y="-80%" width="260%" height="260%">
+        <feGaussianBlur stdDeviation="3" result="b"/>
+        <feMerge>
+          <feMergeNode in="b"/>
+          <feMergeNode in="SourceGraphic"/>
+        </feMerge>
+      </filter>
+      <pattern id="scanlinesL" x="0" y="0" width="80" height="3" patternUnits="userSpaceOnUse">
+        <rect x="0" y="0" width="80" height="1.5" fill="#000000" opacity="0.18"/>
+        <rect x="0" y="1.5" width="80" height="1.5" fill="transparent"/>
+      </pattern>
+      <clipPath id="roundClipL">
+        <rect x="0" y="0" width="80" height="80" rx="20"/>
+      </clipPath>
+    </defs>
+
+    <rect x="0" y="0" width="80" height="80" rx="20" fill="#080C10"/>
+
+    <g clip-path="url(#roundClipL)">
+      <line x1="0" y1="20" x2="80" y2="20" stroke="#F97316" stroke-width="0.3" opacity="0.12"/>
+      <line x1="0" y1="40" x2="80" y2="40" stroke="#F97316" stroke-width="0.3" opacity="0.12"/>
+      <line x1="0" y1="60" x2="80" y2="60" stroke="#F97316" stroke-width="0.3" opacity="0.12"/>
+      <line x1="20" y1="0" x2="20" y2="80" stroke="#F97316" stroke-width="0.3" opacity="0.12"/>
+      <line x1="40" y1="0" x2="40" y2="80" stroke="#F97316" stroke-width="0.3" opacity="0.12"/>
+      <line x1="60" y1="0" x2="60" y2="80" stroke="#F97316" stroke-width="0.3" opacity="0.12"/>
+
+      <text font-family="'Courier New', monospace" font-size="6" fill="#F97316">
+        <tspan x="4"  y="14"  opacity="0.18">1 0</tspan>
+        <tspan x="56" y="14"  opacity="0.14">0 1</tspan>
+        <tspan x="4"  y="72"  opacity="0.18">1 1</tspan>
+        <tspan x="54" y="72"  opacity="0.14">0 0</tspan>
+        <tspan x="4"  y="42"  opacity="0.09">0</tspan>
+        <tspan x="70" y="42"  opacity="0.09">1</tspan>
+      </text>
+      <text x="3" y="28" font-family="monospace" font-size="7" fill="#F97316" opacity="0.20">&lt;</text>
+      <text x="69" y="58" font-family="monospace" font-size="7" fill="#F97316" opacity="0.20">&gt;</text>
+
+      <path d="M16 63 L16 19 L40 45 L64 19 L64 63"
+            fill="none" stroke="#F97316" stroke-width="12"
+            stroke-linecap="square" stroke-linejoin="miter"
+            opacity="0.07" filter="url(#haloL)"/>
+      <path d="M16 63 L16 19 L40 45 L64 19 L64 63"
+            fill="none" stroke="#F97316" stroke-width="6"
+            stroke-linecap="square" stroke-linejoin="miter"
+            opacity="0.20" filter="url(#haloL)"/>
+      <path d="M16 63 L16 19 L40 45 L64 19 L64 63"
+            fill="none" stroke="#F97316" stroke-width="2.8"
+            stroke-linecap="square" stroke-linejoin="miter"
+            filter="url(#haloL)"/>
+      <path d="M16 63 L16 19 L40 45 L64 19 L64 63"
+            fill="none" stroke="#FFD09B" stroke-width="1"
+            stroke-linecap="square" stroke-linejoin="miter"
+            opacity="0.85"/>
+
+      <rect x="14" y="36" width="52" height="2.5" fill="#080C10" opacity="0.55"/>
+      <path d="M16 38.5 L16 19 L40 45 L64 19 L64 38.5"
+            fill="none" stroke="#F97316" stroke-width="2.8"
+            stroke-linecap="square" stroke-linejoin="miter"
+            opacity="0.40"/>
+
+      <circle cx="16" cy="19" r="4.5" fill="#F97316" filter="url(#nodeGlowL)"/>
+      <circle cx="16" cy="19" r="2"   fill="#FFF5E6"/>
+      <circle cx="64" cy="19" r="4.5" fill="#F97316" filter="url(#nodeGlowL)"/>
+      <circle cx="64" cy="19" r="2"   fill="#FFF5E6"/>
+      <circle cx="40" cy="45" r="7"   fill="#F97316" filter="url(#nodeGlowL)"/>
+      <circle cx="40" cy="45" r="3.5" fill="#080C10"/>
+      <circle cx="40" cy="45" r="1.5" fill="#F97316"/>
+
+      <rect x="0" y="0" width="80" height="80" fill="url(#scanlinesL)"/>
+
+      <rect x="3"  y="58" width="6" height="1.5" fill="#F97316" opacity="0.30"/>
+      <rect x="71" y="21" width="6" height="1.5" fill="#F97316" opacity="0.30"/>
+    </g>
+
+    <rect x="1" y="1" width="78" height="78" rx="20"
+          fill="none" stroke="#F97316" stroke-width="0.8" opacity="0.25"/>
+  </svg>
+
+  <!-- ── WORDMARK ── -->
+  <text x="80" y="42"
+        font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif"
+        font-weight="800"
+        font-size="26"
+        letter-spacing="-0.5"
+        fill="#0F172A">Morpheus</text>
+
+  <text x="80" y="63"
+        font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif"
+        font-weight="500"
+        font-size="14"
+        letter-spacing="5"
+        fill="#F97316">HUB</text>
+
+  <line x1="80" y1="50" x2="313" y2="50"
+        stroke="#E2E8F0" stroke-width="1"/>
+</svg>

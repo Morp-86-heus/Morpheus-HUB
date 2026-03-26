@@ -1,0 +1,114 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 80" width="80" height="80">
+  <defs>
+    <!-- Outer halo glow -->
+    <filter id="halo" x="-60%" y="-60%" width="220%" height="220%">
+      <feGaussianBlur stdDeviation="5" result="b1"/>
+      <feGaussianBlur stdDeviation="2" result="b2"/>
+      <feMerge>
+        <feMergeNode in="b1"/>
+        <feMergeNode in="b2"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+    <!-- Node glow -->
+    <filter id="nodeGlow" x="-80%" y="-80%" width="260%" height="260%">
+      <feGaussianBlur stdDeviation="3" result="b"/>
+      <feMerge>
+        <feMergeNode in="b"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+    <!-- Scan line pattern -->
+    <pattern id="scanlines" x="0" y="0" width="80" height="3" patternUnits="userSpaceOnUse">
+      <rect x="0" y="0" width="80" height="1.5" fill="#000000" opacity="0.18"/>
+      <rect x="0" y="1.5" width="80" height="1.5" fill="transparent"/>
+    </pattern>
+    <!-- Clip to rounded square -->
+    <clipPath id="roundClip">
+      <rect x="0" y="0" width="80" height="80" rx="20"/>
+    </clipPath>
+  </defs>
+
+  <!-- Background: near black -->
+  <rect x="0" y="0" width="80" height="80" rx="20" fill="#080C10"/>
+
+  <g clip-path="url(#roundClip)">
+    <!-- Grid lines (very subtle) -->
+    <line x1="0" y1="20" x2="80" y2="20" stroke="#F97316" stroke-width="0.3" opacity="0.12"/>
+    <line x1="0" y1="40" x2="80" y2="40" stroke="#F97316" stroke-width="0.3" opacity="0.12"/>
+    <line x1="0" y1="60" x2="80" y2="60" stroke="#F97316" stroke-width="0.3" opacity="0.12"/>
+    <line x1="20" y1="0" x2="20" y2="80" stroke="#F97316" stroke-width="0.3" opacity="0.12"/>
+    <line x1="40" y1="0" x2="40" y2="80" stroke="#F97316" stroke-width="0.3" opacity="0.12"/>
+    <line x1="60" y1="0" x2="60" y2="80" stroke="#F97316" stroke-width="0.3" opacity="0.12"/>
+
+    <!-- Code rain chars (very faint background) -->
+    <text font-family="'Courier New', monospace" font-size="6" fill="#F97316">
+      <tspan x="4"  y="14"  opacity="0.18">1 0</tspan>
+      <tspan x="56" y="14"  opacity="0.14">0 1</tspan>
+      <tspan x="4"  y="72"  opacity="0.18">1 1</tspan>
+      <tspan x="54" y="72"  opacity="0.14">0 0</tspan>
+      <tspan x="4"  y="42"  opacity="0.09">0</tspan>
+      <tspan x="70" y="42"  opacity="0.09">1</tspan>
+    </text>
+    <!-- corner angle brackets -->
+    <text x="3" y="28" font-family="monospace" font-size="7" fill="#F97316" opacity="0.20">&lt;</text>
+    <text x="69" y="58" font-family="monospace" font-size="7" fill="#F97316" opacity="0.20">&gt;</text>
+
+    <!-- ── M SHAPE ── -->
+
+    <!-- Layer 1: wide outer glow (thickest, most transparent) -->
+    <path d="M16 63 L16 19 L40 45 L64 19 L64 63"
+          fill="none" stroke="#F97316" stroke-width="12"
+          stroke-linecap="square" stroke-linejoin="miter"
+          opacity="0.07" filter="url(#halo)"/>
+
+    <!-- Layer 2: mid glow -->
+    <path d="M16 63 L16 19 L40 45 L64 19 L64 63"
+          fill="none" stroke="#F97316" stroke-width="6"
+          stroke-linecap="square" stroke-linejoin="miter"
+          opacity="0.20" filter="url(#halo)"/>
+
+    <!-- Layer 3: main stroke — sharp matrix style -->
+    <path d="M16 63 L16 19 L40 45 L64 19 L64 63"
+          fill="none" stroke="#F97316" stroke-width="2.8"
+          stroke-linecap="square" stroke-linejoin="miter"
+          filter="url(#halo)"/>
+
+    <!-- Layer 4: bright core line -->
+    <path d="M16 63 L16 19 L40 45 L64 19 L64 63"
+          fill="none" stroke="#FFD09B" stroke-width="1"
+          stroke-linecap="square" stroke-linejoin="miter"
+          opacity="0.85"/>
+
+    <!-- Horizontal glitch slice on M (matrix artifact) -->
+    <rect x="14" y="36" width="52" height="2.5" fill="#080C10" opacity="0.55"/>
+    <path d="M16 38.5 L16 19 L40 45 L64 19 L64 38.5"
+          fill="none" stroke="#F97316" stroke-width="2.8"
+          stroke-linecap="square" stroke-linejoin="miter"
+          opacity="0.40"/>
+
+    <!-- ── NODES ── -->
+    <!-- Top-left -->
+    <circle cx="16" cy="19" r="4.5" fill="#F97316" filter="url(#nodeGlow)"/>
+    <circle cx="16" cy="19" r="2"   fill="#FFF5E6"/>
+    <!-- Top-right -->
+    <circle cx="64" cy="19" r="4.5" fill="#F97316" filter="url(#nodeGlow)"/>
+    <circle cx="64" cy="19" r="2"   fill="#FFF5E6"/>
+    <!-- Central hub -->
+    <circle cx="40" cy="45" r="7"   fill="#F97316" filter="url(#nodeGlow)"/>
+    <circle cx="40" cy="45" r="3.5" fill="#080C10"/>
+    <circle cx="40" cy="45" r="1.5" fill="#F97316"/>
+
+    <!-- Scan lines overlay -->
+    <rect x="0" y="0" width="80" height="80" fill="url(#scanlines)"/>
+
+    <!-- Bottom-left corner blip -->
+    <rect x="3" y="58" width="6" height="1.5" fill="#F97316" opacity="0.30"/>
+    <!-- Top-right corner blip -->
+    <rect x="71" y="21" width="6" height="1.5" fill="#F97316" opacity="0.30"/>
+  </g>
+
+  <!-- Border glow outline -->
+  <rect x="1" y="1" width="78" height="78" rx="20"
+        fill="none" stroke="#F97316" stroke-width="0.8" opacity="0.25"/>
+</svg>

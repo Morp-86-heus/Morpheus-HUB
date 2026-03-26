@@ -41,9 +41,7 @@ export default function LicenzaModal() {
         {/* Header */}
         <div className="px-6 pt-6 pb-4 border-b border-gray-100 shrink-0">
           <div className="flex items-center gap-3 mb-1">
-            <div className="w-8 h-8 bg-orange-500 rounded-lg flex items-center justify-center">
-              <span className="text-white font-black text-sm">M</span>
-            </div>
+            <img src="/MorpheusHub_Icon.svg" alt="" className="w-8 h-8 rounded-lg" />
             <h2 className="text-lg font-bold text-gray-900">Contratto di Licenza d'Uso</h2>
           </div>
           <p className="text-xs text-gray-400">

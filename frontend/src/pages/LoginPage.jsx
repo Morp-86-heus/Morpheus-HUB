@@ -27,10 +27,8 @@ export default function LoginPage() {
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-slate-100 flex items-center justify-center p-4">
       <div className="bg-white rounded-3xl shadow-xl border border-gray-100 p-8 w-full max-w-sm">
         <div className="text-center mb-6">
-          <div className="w-16 h-16 rounded-2xl bg-orange-500 flex items-center justify-center mx-auto mb-4 shadow-lg shadow-orange-200">
-            <span className="text-white font-black text-4xl leading-none">M</span>
-          </div>
-          <h1 className="text-2xl font-extrabold text-gray-900">Morpheus-HUB</h1>
+          <img src="/MorpheusHub_Icon.svg" alt="Morpheus HUB" className="w-16 h-16 mx-auto mb-4" />
+          <h1 className="text-2xl font-extrabold text-gray-900">Morpheus HUB</h1>
           <p className="text-sm text-gray-400 mt-1">Accedi al gestionale</p>
         </div>
 
