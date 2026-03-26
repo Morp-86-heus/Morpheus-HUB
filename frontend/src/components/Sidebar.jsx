@@ -274,23 +274,21 @@ export default function Sidebar() {
   const SidebarContent = ({ onNav }) => (
     <div className="flex flex-col h-full">
       {/* Logo + collapse button */}
-      <div className={`flex items-center h-16 px-4 border-b border-gray-200 shrink-0 ${collapsed ? 'justify-center' : 'justify-between'}`}>
+      <div className={`relative flex items-center justify-center py-4 px-3 border-b border-gray-200 shrink-0`}>
         {collapsed ? (
           <button
             onClick={() => setCollapsed(false)}
-            className="flex items-center justify-center shrink-0 hover:opacity-80 transition-opacity hidden md:flex"
+            className="flex items-center justify-center hover:opacity-80 transition-opacity hidden md:flex"
             title="Espandi"
           >
-            <img src="/MorpheusHub_Icon.svg" alt="Morpheus HUB" className="w-12 h-12 rounded-lg" />
+            <img src="/MorpheusHub_Icon.svg" alt="Morpheus HUB" className="w-12 h-12 rounded-xl" />
           </button>
         ) : (
           <>
-            <div className="flex items-center">
-              <img src="/MorpheusHub_Logo.svg" alt="Morpheus HUB" className="h-14" />
-            </div>
+            <img src="/MorpheusHub_Logo.svg" alt="Morpheus HUB" className="h-16" />
             <button
               onClick={() => setCollapsed(true)}
-              className="p-1.5 rounded-lg text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition-colors hidden md:block"
+              className="absolute right-3 top-1/2 -translate-y-1/2 p-1.5 rounded-lg text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition-colors hidden md:block"
               title="Comprimi"
             >
               <Icon name="chevron" className="w-4 h-4" />
