@@ -281,12 +281,12 @@ export default function Sidebar() {
             className="flex items-center justify-center shrink-0 hover:opacity-80 transition-opacity hidden md:flex"
             title="Espandi"
           >
-            <img src="/MorpheusHub_Icon.svg" alt="Morpheus HUB" className="w-10 h-10 rounded-lg" />
+            <img src="/MorpheusHub_Icon.svg" alt="Morpheus HUB" className="w-12 h-12 rounded-lg" />
           </button>
         ) : (
           <>
             <div className="flex items-center">
-              <img src="/MorpheusHub_Logo.svg" alt="Morpheus HUB" className="h-11" />
+              <img src="/MorpheusHub_Logo.svg" alt="Morpheus HUB" className="h-14" />
             </div>
             <button
               onClick={() => setCollapsed(true)}
