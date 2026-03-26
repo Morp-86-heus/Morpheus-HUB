@@ -45,6 +45,21 @@ def me(current_user: User = Depends(get_current_user)):
     return current_user
 
 
+@router.post("/accetta-licenza", response_model=schemas.UserOut)
+def accetta_licenza(
+    request: Request,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    current_user.licenza_accettata = True
+    current_user.licenza_accettata_at = datetime.now(timezone.utc)
+    db.commit()
+    db.refresh(current_user)
+    log_action("auth.licenza_accettata", user=current_user,
+               org_id=current_user.organizzazione_id, request=request)
+    return current_user
+
+
 @router.get("/users", response_model=list[schemas.UserOut])
 def list_users(
     request: Request,

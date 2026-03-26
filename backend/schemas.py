@@ -555,6 +555,7 @@ class UserOut(BaseModel):
     org_giorni_grazia_rimanenti: Optional[int] = None
     org_piano: Optional[str] = None
     created_at: Optional[datetime] = None
+    licenza_accettata: bool = False
 
 
 class Token(BaseModel):

@@ -32,6 +32,7 @@ import EmailSistemaPage from './pages/EmailSistemaPage'
 import PrivacyPolicyPage from './pages/PrivacyPolicyPage'
 import CookiePolicyPage from './pages/CookiePolicyPage'
 import LicenzaPage from './pages/LicenzaPage'
+import LicenzaModal from './components/LicenzaModal'
 import ProprietarioDashboardPage from './pages/ProprietarioDashboardPage'
 import AuditLogPage from './pages/AuditLogPage'
 import ContabilitaOrgPage from './pages/ContabilitaOrgPage'
@@ -135,6 +136,9 @@ function AppRoutes() {
   }
 
   if (!user) return <LoginPage />
+
+  // Accettazione contratto di licenza obbligatoria
+  if (!user.licenza_accettata) return <LicenzaModal />
 
   // Blocco licenza per utenti non-proprietario
   if (!isProprietario && user.org_stato_licenza === 'bloccata') {
