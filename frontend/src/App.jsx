@@ -31,6 +31,7 @@ import ResetPasswordPage from './pages/ResetPasswordPage'
 import EmailSistemaPage from './pages/EmailSistemaPage'
 import PrivacyPolicyPage from './pages/PrivacyPolicyPage'
 import CookiePolicyPage from './pages/CookiePolicyPage'
+import LicenzaPage from './pages/LicenzaPage'
 import ProprietarioDashboardPage from './pages/ProprietarioDashboardPage'
 import AuditLogPage from './pages/AuditLogPage'
 import ContabilitaOrgPage from './pages/ContabilitaOrgPage'
@@ -123,6 +124,7 @@ function AppRoutes() {
   if (location.pathname === '/reset-password') return <ResetPasswordPage />
   if (location.pathname === '/privacy-policy') return <PrivacyPolicyPage />
   if (location.pathname === '/cookie-policy') return <CookiePolicyPage />
+  if (location.pathname === '/licenza') return <LicenzaPage />
 
   if (loading) {
     return (
