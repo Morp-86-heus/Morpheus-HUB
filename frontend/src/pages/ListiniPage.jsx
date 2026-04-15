@@ -149,6 +149,82 @@ function VoceForm({ initial, onSave, onCancel }) {
   )
 }
 
+function DuplicaVoceModal({ voce, onConfirm, onCancel }) {
+  const prezzoEuro = voce.prezzo != null ? (voce.prezzo / 100).toFixed(2) : ''
+  const [descrizione, setDescrizione] = useState(`Copia di ${voce.descrizione}`)
+  const [prezzo, setPrezzo] = useState(prezzoEuro)
+  const [unitaMisura, setUnitaMisura] = useState(voce.unita_misura || '')
+  const [saving, setSaving] = useState(false)
+  const [err, setErr] = useState('')
+
+  const submit = async (e) => {
+    e.preventDefault()
+    if (!descrizione.trim()) { setErr('La descrizione è obbligatoria'); return }
+    setSaving(true)
+    try {
+      const prezzoVal = prezzo !== '' ? Math.round(parseFloat(String(prezzo).replace(',', '.')) * 100) : null
+      await onConfirm({ descrizione: descrizione.trim(), prezzo: isNaN(prezzoVal) ? null : prezzoVal, unita_misura: unitaMisura || null })
+    } catch (ex) {
+      setErr(ex.response?.data?.detail || 'Errore duplicazione')
+      setSaving(false)
+    }
+  }
+
+  return (
+    <Modal title="Duplica voce" onClose={onCancel}>
+      <form onSubmit={submit} className="space-y-4">
+        <p className="text-sm text-gray-600">
+          Verrà creata una copia di <strong>{voce.descrizione}</strong>.
+        </p>
+        {err && <p className="text-sm text-red-600">{err}</p>}
+        <div>
+          <label className="block text-xs font-medium text-gray-600 mb-1">Descrizione *</label>
+          <input
+            type="text"
+            value={descrizione}
+            onChange={e => setDescrizione(e.target.value)}
+            autoFocus
+            className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
+          />
+        </div>
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <label className="block text-xs font-medium text-gray-600 mb-1">Prezzo (€)</label>
+            <div className="relative">
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-gray-400 font-medium">€</span>
+              <input
+                type="number"
+                min="0"
+                step="0.01"
+                value={prezzo}
+                onChange={e => setPrezzo(e.target.value)}
+                placeholder="0,00"
+                className="w-full border border-gray-200 rounded-lg pl-7 pr-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
+              />
+            </div>
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-gray-600 mb-1">Unità misura</label>
+            <input
+              type="text"
+              value={unitaMisura}
+              onChange={e => setUnitaMisura(e.target.value)}
+              placeholder="es. ora, cadauno"
+              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
+            />
+          </div>
+        </div>
+        <div className="flex gap-2 justify-end pt-1">
+          <button type="button" onClick={onCancel} className="px-4 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg">Annulla</button>
+          <button type="submit" disabled={saving} className="px-4 py-2 text-sm bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50">
+            {saving ? 'Duplico…' : 'Duplica'}
+          </button>
+        </div>
+      </form>
+    </Modal>
+  )
+}
+
 function DuplicaListinoModal({ listino, onConfirm, onCancel }) {
   const [nome, setNome] = useState(`Copia di ${listino.nome}`)
   const [saving, setSaving] = useState(false)
@@ -211,6 +287,7 @@ export default function ListiniPage() {
   const [selectedListino, setSelectedListino] = useState(null)
   const [newVoce, setNewVoce] = useState(false)
   const [editVoce, setEditVoce] = useState(null)
+  const [duplicateVoce, setDuplicateVoce] = useState(null)
   const [deleteVoce, setDeleteVoce] = useState(null)
 
   const load = async () => {
@@ -377,6 +454,15 @@ export default function ListiniPage() {
                                           </svg>
                                         </button>
                                         <button
+                                          onClick={() => setDuplicateVoce({ listino: l, voce: v })}
+                                          className="p-1 text-gray-400 hover:text-green-600"
+                                          title="Duplica"
+                                        >
+                                          <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                                          </svg>
+                                        </button>
+                                        <button
                                           onClick={() => setDeleteVoce({ listino: l, voce: v })}
                                           className="p-1 text-gray-400 hover:text-red-600"
                                         >
@@ -488,6 +574,19 @@ export default function ListiniPage() {
             onCancel={() => setEditVoce(null)}
           />
         </Modal>
+      )}
+
+      {/* Modal: Duplica voce */}
+      {duplicateVoce && (
+        <DuplicaVoceModal
+          voce={duplicateVoce.voce}
+          onConfirm={async (data) => {
+            await listiniApi.addVoce(duplicateVoce.listino.id, data)
+            setDuplicateVoce(null)
+            load()
+          }}
+          onCancel={() => setDuplicateVoce(null)}
+        />
       )}
 
       {/* Modal: Conferma elimina voce */}
