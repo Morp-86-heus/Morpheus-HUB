@@ -397,6 +397,10 @@ class ListinoUpdate(BaseModel):
     note: Optional[str] = None
 
 
+class ListinoDuplicate(BaseModel):
+    nome: str
+
+
 class ListinoOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
     id: int

@@ -63,6 +63,33 @@ def update_listino(
     return db.query(Listino).options(joinedload(Listino.voci)).filter_by(id=lid).first()
 
 
+@router.post("/{lid}/duplicate", response_model=schemas.ListinoOut, status_code=201)
+def duplicate_listino(
+    lid: int,
+    payload: schemas.ListinoDuplicate,
+    db: Session = Depends(get_db),
+    _: User = Depends(_admin),
+    org_id: int = Depends(get_active_org_id),
+):
+    org = db.query(Organizzazione).filter_by(id=org_id).first()
+    check_feature(org, 'listini')
+    src = db.query(Listino).options(joinedload(Listino.voci)).filter_by(id=lid, organizzazione_id=org_id).first()
+    if not src:
+        raise HTTPException(status_code=404, detail="Listino non trovato")
+    nuovo = Listino(
+        commitente=src.commitente,
+        nome=payload.nome,
+        note=src.note,
+        organizzazione_id=org_id,
+    )
+    db.add(nuovo)
+    db.flush()
+    for v in src.voci:
+        db.add(ListinoVoce(listino_id=nuovo.id, descrizione=v.descrizione, prezzo=v.prezzo, unita_misura=v.unita_misura))
+    db.commit()
+    return db.query(Listino).options(joinedload(Listino.voci)).filter_by(id=nuovo.id).first()
+
+
 @router.delete("/{lid}", status_code=204)
 def delete_listino(
     lid: int,

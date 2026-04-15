@@ -83,6 +83,7 @@ export const listiniApi = {
   create: (data) => api.post('/listini', data),
   update: (id, data) => api.put(`/listini/${id}`, data),
   delete: (id) => api.delete(`/listini/${id}`),
+  duplicate: (id, data) => api.post(`/listini/${id}/duplicate`, data),
   addVoce: (lid, data) => api.post(`/listini/${lid}/voci`, data),
   updateVoce: (lid, vid, data) => api.put(`/listini/${lid}/voci/${vid}`, data),
   deleteVoce: (lid, vid) => api.delete(`/listini/${lid}/voci/${vid}`),

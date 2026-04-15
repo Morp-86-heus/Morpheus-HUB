@@ -46,6 +46,12 @@ services:
       - backend
     restart: unless-stopped
 
+  website:
+    build: ./website
+    ports:
+      - "4000:80"
+    restart: unless-stopped
+
 volumes:
   postgres_data:
   uploads_data:
