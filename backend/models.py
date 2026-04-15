@@ -317,6 +317,20 @@ class ListinoVoce(Base):
     listino = relationship("Listino", back_populates="voci")
 
 
+class SottoMagazzino(Base):
+    __tablename__ = "sotto_magazzini"
+
+    id = Column(Integer, primary_key=True, index=True)
+    nome = Column(String(200), nullable=False)
+    descrizione = Column(Text, nullable=True)
+    commitente = Column(String(100), nullable=False, index=True)
+    organizzazione_id = Column(Integer, ForeignKey("organizzazioni.id"), nullable=True, index=True)
+    created_at = Column(DateTime, server_default=func.now())
+    updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())
+
+    articoli = relationship("Articolo", back_populates="sotto_magazzino")
+
+
 class Articolo(Base):
     __tablename__ = "articoli"
 
@@ -334,10 +348,12 @@ class Articolo(Base):
     quantita_minima = Column(Integer, nullable=True, default=0)
     fornitore = Column(String(200), nullable=True)
     note = Column(Text, nullable=True)
+    sotto_magazzino_id = Column(Integer, ForeignKey("sotto_magazzini.id", ondelete="SET NULL"), nullable=True, index=True)
     organizzazione_id = Column(Integer, ForeignKey("organizzazioni.id"), nullable=True, index=True)
     created_at = Column(DateTime, server_default=func.now())
     updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())
 
+    sotto_magazzino = relationship("SottoMagazzino", back_populates="articoli")
     movimenti = relationship("MovimentoMagazzino", back_populates="articolo",
                              cascade="all, delete-orphan")
 

@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException, Response
 from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import or_
 from database import get_db
-from models import Articolo, MovimentoMagazzino, Organizzazione, User, RuoloEnum
+from models import Articolo, MovimentoMagazzino, Organizzazione, SottoMagazzino, User, RuoloEnum
 from auth import require_roles, get_active_org_id
 from utils.plan import check_feature
 import schemas
@@ -26,9 +26,10 @@ def list_articoli(
     _: User = Depends(_tutti),
     org_id: int = Depends(get_active_org_id),
 ):
-    q = db.query(Articolo).options(joinedload(Articolo.movimenti)).filter(
-        Articolo.organizzazione_id == org_id
-    )
+    q = db.query(Articolo).options(
+        joinedload(Articolo.movimenti),
+        joinedload(Articolo.sotto_magazzino),
+    ).filter(Articolo.organizzazione_id == org_id)
     if commitente:
         q = q.filter(Articolo.commitente == commitente)
     if cliente:
@@ -78,7 +79,7 @@ def create_articolo(
     db.add(obj)
     db.commit()
     db.refresh(obj)
-    return db.query(Articolo).options(joinedload(Articolo.movimenti)).filter_by(id=obj.id).first()
+    return db.query(Articolo).options(joinedload(Articolo.movimenti), joinedload(Articolo.sotto_magazzino)).filter_by(id=obj.id).first()
 
 
 @router.put("/articoli/{aid}", response_model=schemas.ArticoloOut)
@@ -113,7 +114,7 @@ def update_articolo(
         setattr(obj, k, v)
     obj.updated_at = datetime.utcnow()
     db.commit()
-    return db.query(Articolo).options(joinedload(Articolo.movimenti)).filter_by(id=aid).first()
+    return db.query(Articolo).options(joinedload(Articolo.movimenti), joinedload(Articolo.sotto_magazzino)).filter_by(id=aid).first()
 
 
 @router.delete("/articoli/{aid}", status_code=204)
@@ -178,7 +179,7 @@ def add_movimento(
 
     articolo.updated_at = datetime.utcnow()
     db.commit()
-    return db.query(Articolo).options(joinedload(Articolo.movimenti)).filter_by(id=aid).first()
+    return db.query(Articolo).options(joinedload(Articolo.movimenti), joinedload(Articolo.sotto_magazzino)).filter_by(id=aid).first()
 
 
 @router.get("/cerca-articolo")
@@ -275,3 +276,110 @@ def list_categorie(
         .all()
     )
     return [r[0] for r in rows]
+
+
+# ── Sottomagazzini ─────────────────────────────────────────────────────────────
+
+@router.get("/sotto-magazzini", response_model=List[schemas.SottoMagazzinoOut])
+def list_sotto_magazzini(
+    commitente: Optional[str] = None,
+    db: Session = Depends(get_db),
+    _: User = Depends(_tutti),
+    org_id: int = Depends(get_active_org_id),
+):
+    q = db.query(SottoMagazzino).filter(SottoMagazzino.organizzazione_id == org_id)
+    if commitente:
+        q = q.filter(SottoMagazzino.commitente == commitente)
+    return q.order_by(SottoMagazzino.commitente, SottoMagazzino.nome).all()
+
+
+@router.post("/sotto-magazzini", response_model=schemas.SottoMagazzinoOut, status_code=201)
+def create_sotto_magazzino(
+    payload: schemas.SottoMagazzinoCreate,
+    db: Session = Depends(get_db),
+    _: User = Depends(_admin),
+    org_id: int = Depends(get_active_org_id),
+):
+    org = db.query(Organizzazione).filter_by(id=org_id).first()
+    check_feature(org, 'magazzino')
+    obj = SottoMagazzino(**payload.model_dump(), organizzazione_id=org_id)
+    db.add(obj)
+    db.commit()
+    db.refresh(obj)
+    return obj
+
+
+@router.put("/sotto-magazzini/{sid}", response_model=schemas.SottoMagazzinoOut)
+def update_sotto_magazzino(
+    sid: int,
+    payload: schemas.SottoMagazzinoUpdate,
+    db: Session = Depends(get_db),
+    _: User = Depends(_admin),
+    org_id: int = Depends(get_active_org_id),
+):
+    obj = db.query(SottoMagazzino).filter_by(id=sid, organizzazione_id=org_id).first()
+    if not obj:
+        raise HTTPException(status_code=404, detail="Sottomagazzino non trovato")
+    for k, v in payload.model_dump(exclude_unset=True).items():
+        setattr(obj, k, v)
+    obj.updated_at = datetime.utcnow()
+    db.commit()
+    db.refresh(obj)
+    return obj
+
+
+@router.delete("/sotto-magazzini/{sid}", status_code=204)
+def delete_sotto_magazzino(
+    sid: int,
+    db: Session = Depends(get_db),
+    _: User = Depends(_admin),
+    org_id: int = Depends(get_active_org_id),
+):
+    obj = db.query(SottoMagazzino).filter_by(id=sid, organizzazione_id=org_id).first()
+    if not obj:
+        raise HTTPException(status_code=404, detail="Sottomagazzino non trovato")
+    # Gli articoli che puntano a questo sottomagazzino tornano al principale (SET NULL via FK)
+    db.delete(obj)
+    db.commit()
+
+
+# ── Spostamento articolo ───────────────────────────────────────────────────────
+
+@router.post("/articoli/{aid}/sposta", response_model=schemas.ArticoloOut)
+def sposta_articolo(
+    aid: int,
+    payload: schemas.SpostamentoCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(_admin),
+    org_id: int = Depends(get_active_org_id),
+):
+    articolo = db.query(Articolo).filter_by(id=aid, organizzazione_id=org_id).first()
+    if not articolo:
+        raise HTTPException(status_code=404, detail="Articolo non trovato")
+
+    dest = None
+    if payload.sotto_magazzino_id is not None:
+        dest = db.query(SottoMagazzino).filter_by(id=payload.sotto_magazzino_id, organizzazione_id=org_id).first()
+        if not dest:
+            raise HTTPException(status_code=404, detail="Sottomagazzino non trovato")
+        if dest.commitente != articolo.commitente:
+            raise HTTPException(status_code=400, detail="Il sottomagazzino non appartiene allo stesso committente dell'articolo")
+
+    provenienza = articolo.sotto_magazzino.nome if articolo.sotto_magazzino else "Magazzino principale"
+    destinazione = dest.nome if dest else "Magazzino principale"
+    nota_auto = f"Spostato da '{provenienza}' a '{destinazione}'"
+    if payload.note:
+        nota_auto += f" — {payload.note}"
+
+    db.add(MovimentoMagazzino(
+        articolo_id=aid,
+        tipo="trasferimento",
+        quantita=articolo.quantita_disponibile,
+        note=nota_auto,
+        creato_da=current_user.id,
+    ))
+
+    articolo.sotto_magazzino_id = payload.sotto_magazzino_id
+    articolo.updated_at = datetime.utcnow()
+    db.commit()
+    return db.query(Articolo).options(joinedload(Articolo.movimenti), joinedload(Articolo.sotto_magazzino)).filter_by(id=aid).first()

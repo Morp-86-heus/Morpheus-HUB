@@ -539,6 +539,204 @@ function DDTModal({ articoli, committente, onClose }) {
   )
 }
 
+function SpostaModal({ articolo, sottoMagazzini, onConfirm, onCancel }) {
+  const [destinazione, setDestinazione] = useState(articolo.sotto_magazzino_id ? String(articolo.sotto_magazzino_id) : '__principale__')
+  const [note, setNote] = useState('')
+  const [saving, setSaving] = useState(false)
+  const [err, setErr] = useState('')
+
+  const submit = async (e) => {
+    e.preventDefault()
+    const corrente = articolo.sotto_magazzino_id ? String(articolo.sotto_magazzino_id) : '__principale__'
+    if (destinazione === corrente) { setErr('Seleziona una destinazione diversa da quella attuale'); return }
+    setSaving(true)
+    try {
+      const sotto_magazzino_id = destinazione === '__principale__' ? null : parseInt(destinazione)
+      await onConfirm({ sotto_magazzino_id, note: note.trim() || null })
+    } catch (ex) {
+      setErr(ex.response?.data?.detail || 'Errore spostamento')
+      setSaving(false)
+    }
+  }
+
+  const nome = [articolo.marca, articolo.modello].filter(Boolean).join(' ') || articolo.descrizione
+  const posizioneAttuale = articolo.sotto_magazzino ? articolo.sotto_magazzino.nome : 'Magazzino principale'
+
+  return (
+    <Modal title="Sposta articolo" onClose={onCancel}>
+      <form onSubmit={submit} className="space-y-4">
+        <div className="bg-gray-50 rounded-lg p-3 text-sm">
+          <p className="font-medium text-gray-800">{nome}</p>
+          {articolo.seriale && <p className="text-xs text-gray-400 mt-0.5">S/N: {articolo.seriale}</p>}
+          <p className="text-xs text-gray-500 mt-1">Posizione attuale: <span className="font-medium text-purple-700">{posizioneAttuale}</span></p>
+        </div>
+        {err && <p className="text-sm text-red-600">{err}</p>}
+        <div>
+          <label className="block text-xs font-medium text-gray-600 mb-2">Destinazione</label>
+          <div className="space-y-2">
+            <label className={`flex items-center gap-3 p-3 border rounded-lg cursor-pointer transition-colors ${destinazione === '__principale__' ? 'border-purple-400 bg-purple-50' : 'border-gray-200 hover:bg-gray-50'}`}>
+              <input type="radio" name="dest" value="__principale__" checked={destinazione === '__principale__'} onChange={() => setDestinazione('__principale__')} className="accent-purple-600" />
+              <div>
+                <p className="text-sm font-medium text-gray-800">Magazzino principale</p>
+              </div>
+            </label>
+            {sottoMagazzini.map(s => (
+              <label key={s.id} className={`flex items-center gap-3 p-3 border rounded-lg cursor-pointer transition-colors ${destinazione === String(s.id) ? 'border-purple-400 bg-purple-50' : 'border-gray-200 hover:bg-gray-50'}`}>
+                <input type="radio" name="dest" value={String(s.id)} checked={destinazione === String(s.id)} onChange={() => setDestinazione(String(s.id))} className="accent-purple-600" />
+                <div>
+                  <p className="text-sm font-medium text-gray-800">{s.nome}</p>
+                  {s.descrizione && <p className="text-xs text-gray-400">{s.descrizione}</p>}
+                </div>
+              </label>
+            ))}
+            {sottoMagazzini.length === 0 && (
+              <p className="text-xs text-gray-400 italic px-1">Nessun sottomagazzino configurato per {articolo.commitente}. Crealo prima dalla barra filtri.</p>
+            )}
+          </div>
+        </div>
+        <div>
+          <label className="block text-xs font-medium text-gray-600 mb-1">Note <span className="text-gray-400">(opzionale)</span></label>
+          <input type="text" value={note} onChange={e => setNote(e.target.value)} placeholder="es. Affidato a Germano per intervento" className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500" />
+        </div>
+        <div className="flex gap-2 justify-end pt-1">
+          <button type="button" onClick={onCancel} className="px-4 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg">Annulla</button>
+          <button type="submit" disabled={saving || sottoMagazzini.length === 0 && destinazione !== '__principale__'} className="px-4 py-2 text-sm bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50">
+            {saving ? 'Sposto…' : 'Sposta'}
+          </button>
+        </div>
+      </form>
+    </Modal>
+  )
+}
+
+function SottoMagazziniManagerModal({ commitente, sottoMagazzini: initialList, onClose }) {
+  const [list, setList] = useState(initialList)
+  const [editItem, setEditItem] = useState(null)  // null=nuovo, obj=modifica
+  const [showForm, setShowForm] = useState(false)
+  const [form, setForm] = useState({ nome: '', descrizione: '' })
+  const [saving, setSaving] = useState(false)
+  const [err, setErr] = useState('')
+  const [deleteItem, setDeleteItem] = useState(null)
+
+  const reload = async () => {
+    const res = await magazzinoApi.sottoMagazzini(commitente)
+    setList(res.data)
+  }
+
+  const openNew = () => { setEditItem(null); setForm({ nome: '', descrizione: '' }); setErr(''); setShowForm(true) }
+  const openEdit = (s) => { setEditItem(s); setForm({ nome: s.nome, descrizione: s.descrizione || '' }); setErr(''); setShowForm(true) }
+
+  const submit = async (e) => {
+    e.preventDefault()
+    if (!form.nome.trim()) { setErr('Il nome è obbligatorio'); return }
+    setSaving(true)
+    try {
+      if (editItem) {
+        await magazzinoApi.updateSottoMagazzino(editItem.id, { nome: form.nome.trim(), descrizione: form.descrizione.trim() || null })
+      } else {
+        await magazzinoApi.createSottoMagazzino({ nome: form.nome.trim(), descrizione: form.descrizione.trim() || null, commitente })
+      }
+      setShowForm(false)
+      await reload()
+    } catch (ex) {
+      setErr(ex.response?.data?.detail || 'Errore salvataggio')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const confirmDelete = async (s) => {
+    await magazzinoApi.deleteSottoMagazzino(s.id)
+    setDeleteItem(null)
+    await reload()
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+      <div className="bg-white rounded-xl shadow-xl w-full max-w-md">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
+          <div>
+            <h2 className="text-base font-semibold text-gray-800">Sottomagazzini — {commitente}</h2>
+            <p className="text-xs text-gray-400 mt-0.5">Gestisci i depositi e carkit per questo committente</p>
+          </div>
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+          </button>
+        </div>
+        <div className="px-5 py-4 space-y-3">
+          {list.length === 0 && !showForm && (
+            <p className="text-sm text-gray-400 italic text-center py-4">Nessun sottomagazzino configurato</p>
+          )}
+          {list.map(s => (
+            <div key={s.id} className="flex items-center justify-between gap-2 p-3 border border-gray-200 rounded-lg">
+              <div className="min-w-0">
+                <p className="text-sm font-medium text-gray-800">{s.nome}</p>
+                {s.descrizione && <p className="text-xs text-gray-400 truncate">{s.descrizione}</p>}
+              </div>
+              <div className="flex gap-1 shrink-0">
+                <button onClick={() => openEdit(s)} className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded" title="Modifica">
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
+                </button>
+                <button onClick={() => setDeleteItem(s)} className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded" title="Elimina">
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                </button>
+              </div>
+            </div>
+          ))}
+
+          {showForm && (
+            <form onSubmit={submit} className="border border-purple-200 bg-purple-50 rounded-lg p-3 space-y-3">
+              <p className="text-xs font-semibold text-purple-700">{editItem ? 'Modifica sottomagazzino' : 'Nuovo sottomagazzino'}</p>
+              {err && <p className="text-xs text-red-600">{err}</p>}
+              <input
+                type="text"
+                value={form.nome}
+                onChange={e => setForm(f => ({ ...f, nome: e.target.value }))}
+                placeholder="Nome (es. Carkit Germano, Deposito Roma)"
+                autoFocus
+                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
+              />
+              <input
+                type="text"
+                value={form.descrizione}
+                onChange={e => setForm(f => ({ ...f, descrizione: e.target.value }))}
+                placeholder="Descrizione opzionale"
+                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
+              />
+              <div className="flex gap-2 justify-end">
+                <button type="button" onClick={() => setShowForm(false)} className="px-3 py-1.5 text-sm text-gray-600 hover:bg-gray-100 rounded-lg">Annulla</button>
+                <button type="submit" disabled={saving} className="px-3 py-1.5 text-sm bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50">
+                  {saving ? 'Salvo…' : 'Salva'}
+                </button>
+              </div>
+            </form>
+          )}
+
+          {deleteItem && (
+            <div className="border border-red-200 bg-red-50 rounded-lg p-3 space-y-2">
+              <p className="text-sm text-red-700">Eliminare <strong>{deleteItem.nome}</strong>? Gli articoli al suo interno torneranno al magazzino principale.</p>
+              <div className="flex gap-2 justify-end">
+                <button onClick={() => setDeleteItem(null)} className="px-3 py-1.5 text-sm text-gray-600 hover:bg-gray-100 rounded-lg">Annulla</button>
+                <button onClick={() => confirmDelete(deleteItem)} className="px-3 py-1.5 text-sm bg-red-600 text-white rounded-lg hover:bg-red-700">Elimina</button>
+              </div>
+            </div>
+          )}
+
+          {!showForm && (
+            <button
+              onClick={openNew}
+              className="w-full flex items-center justify-center gap-2 py-2 text-sm text-purple-600 border border-dashed border-purple-300 rounded-lg hover:bg-purple-50"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
+              Aggiungi sottomagazzino
+            </button>
+          )}
+        </div>
+      </div>
+    </div>
+  )
+}
+
 export default function MagazzinoPage() {
   const { can } = useAuth()
   const canViewArticoli   = can('magazzino.articoli.view')
@@ -570,6 +768,10 @@ export default function MagazzinoPage() {
   const [editArticolo, setEditArticolo] = useState(null)
   const [deleteArticolo, setDeleteArticolo] = useState(null)
   const [movimentoArticolo, setMovimentoArticolo] = useState(null)
+  const [spostaArticolo, setSpostaArticolo] = useState(null)
+  const [sottoMagazzini, setSottoMagazzini] = useState([])
+  const [filterSottoMagazzino, setFilterSottoMagazzino] = useState('')
+  const [sottoMagazziniModal, setSottoMagazziniModal] = useState(null)
 
   // ── Vista card / tabella ──
   const [viewMode, setViewMode] = useState(() => localStorage.getItem('magazzino_viewMode') || 'card') // 'card' | 'table'
@@ -604,12 +806,14 @@ export default function MagazzinoPage() {
       if (filterCliente) params.cliente = filterCliente
       if (search) params.search = search
       if (sottoMinimo) params.sotto_minimo = true
-      const [aRes, cRes] = await Promise.all([
+      const [aRes, cRes, smRes] = await Promise.all([
         magazzinoApi.list(params),
         lookupApi.commitenti(),
+        magazzinoApi.sottoMagazzini(),
       ])
       setArticoli(aRes.data)
       setCommitenti(cRes.data.map(c => c.nome ?? c))
+      setSottoMagazzini(smRes.data)
       if (selected) {
         const aggiornato = aRes.data.find(a => a.id === selected.id)
         setSelected(aggiornato || null)
@@ -652,12 +856,13 @@ export default function MagazzinoPage() {
     setShowAdvancedFilters(false)
   }, [activeTab])
 
-  // Filtra per tab attivo
-  const articoliFiltrati = articoli.filter(a =>
-    activeTab === 'ritirati'
-      ? a.categoria === 'Gestione Guasti'
-      : a.categoria !== 'Gestione Guasti'
-  )
+  // Filtra per tab attivo + sottomagazzino
+  const articoliFiltrati = articoli.filter(a => {
+    if (activeTab === 'ritirati' ? a.categoria !== 'Gestione Guasti' : a.categoria === 'Gestione Guasti') return false
+    if (filterSottoMagazzino === '__principale__') return !a.sotto_magazzino_id
+    if (filterSottoMagazzino) return String(a.sotto_magazzino_id) === filterSottoMagazzino
+    return true
+  })
 
   // Categorie e fornitori per i filtri avanzati
   const categorieDisponibili = [...new Set(articoliFiltrati.map(a => a.categoria).filter(Boolean))].sort()
@@ -706,8 +911,8 @@ export default function MagazzinoPage() {
 
   const toggleCommitente = (c) => setExpandedCommitenti(prev => ({ ...prev, [c]: !prev[c] }))
 
-  const tipoColor = { carico: 'text-green-600', scarico: 'text-red-600', rettifica: 'text-yellow-600' }
-  const tipoIcon = { carico: '+', scarico: '−', rettifica: '≈' }
+  const tipoColor = { carico: 'text-green-600', scarico: 'text-red-600', rettifica: 'text-yellow-600', trasferimento: 'text-purple-600' }
+  const tipoIcon = { carico: '+', scarico: '−', rettifica: '≈', trasferimento: '⇄' }
 
   // Clienti disponibili per il filtro (dal committente selezionato, solo tab attivo)
   const clientiFilter = filterCommitente
@@ -1044,7 +1249,7 @@ export default function MagazzinoPage() {
       {activeTab !== 'log' && <div className="flex gap-2 flex-wrap items-center">
         <span className="text-xs text-gray-400 font-medium uppercase tracking-wider">Committente:</span>
         <button
-          onClick={() => { setFilterCommitente(''); setFilterCliente('') }}
+          onClick={() => { setFilterCommitente(''); setFilterCliente(''); setFilterSottoMagazzino('') }}
           className={`px-3 py-1.5 text-sm rounded-full border transition-colors ${filterCommitente === '' ? 'bg-blue-600 text-white border-blue-600' : 'border-gray-200 text-gray-600 hover:bg-gray-50'}`}
         >
           Tutti
@@ -1052,7 +1257,7 @@ export default function MagazzinoPage() {
         {commitenti.map(c => (
           <button
             key={c}
-            onClick={() => { setFilterCommitente(c); setFilterCliente('') }}
+            onClick={() => { setFilterCommitente(c); setFilterCliente(''); setFilterSottoMagazzino('') }}
             className={`px-3 py-1.5 text-sm rounded-full border transition-colors ${filterCommitente === c ? 'bg-blue-600 text-white border-blue-600' : 'border-gray-200 text-gray-600 hover:bg-gray-50'}`}
           >
             {c}
@@ -1081,6 +1286,49 @@ export default function MagazzinoPage() {
           ))}
         </div>
       )}
+
+      {/* Filtro sottomagazzino + gestisci */}
+      {activeTab === 'giacenza' && filterCommitente && (() => {
+        const smCommitente = sottoMagazzini.filter(s => s.commitente === filterCommitente)
+        if (smCommitente.length === 0 && !isAdmin) return null
+        return (
+          <div className="flex gap-2 flex-wrap items-center">
+            <span className="text-xs text-gray-400 font-medium uppercase tracking-wider">Posizione:</span>
+            <button
+              onClick={() => setFilterSottoMagazzino('')}
+              className={`px-3 py-1.5 text-sm rounded-full border transition-colors ${filterSottoMagazzino === '' ? 'bg-purple-600 text-white border-purple-600' : 'border-gray-200 text-gray-600 hover:bg-gray-50'}`}
+            >
+              Tutti
+            </button>
+            <button
+              onClick={() => setFilterSottoMagazzino('__principale__')}
+              className={`px-3 py-1.5 text-sm rounded-full border transition-colors ${filterSottoMagazzino === '__principale__' ? 'bg-purple-600 text-white border-purple-600' : 'border-gray-200 text-gray-600 hover:bg-gray-50'}`}
+            >
+              Magazzino principale
+            </button>
+            {smCommitente.map(s => (
+              <button
+                key={s.id}
+                onClick={() => setFilterSottoMagazzino(String(s.id))}
+                className={`px-3 py-1.5 text-sm rounded-full border transition-colors ${filterSottoMagazzino === String(s.id) ? 'bg-purple-600 text-white border-purple-600' : 'border-gray-200 text-gray-600 hover:bg-gray-50'}`}
+              >
+                {s.nome}
+              </button>
+            ))}
+            {isAdmin && (
+              <button
+                onClick={() => setSottoMagazziniModal(filterCommitente)}
+                className="ml-auto flex items-center gap-1.5 px-3 py-1.5 text-sm border border-dashed border-gray-300 text-gray-500 rounded-full hover:border-purple-400 hover:text-purple-600 transition-colors"
+              >
+                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                </svg>
+                Gestisci sottomagazzini
+              </button>
+            )}
+          </div>
+        )
+      })()}
 
       {/* Contenuto articoli (nascosto nel tab log) */}
       {activeTab !== 'log' && !canViewArticoli ? (
@@ -1176,11 +1424,20 @@ export default function MagazzinoPage() {
                     {a.quantita_minima > 0 && <span className="text-xs text-gray-400 ml-1">/ {a.quantita_minima}</span>}
                   </td>
                   <td className="px-3 py-2.5">
+                    {a.sotto_magazzino && (
+                      <span className="text-xs bg-purple-100 text-purple-700 px-1.5 py-0.5 rounded mb-1 inline-block">{a.sotto_magazzino.nome}</span>
+                    )}
                     <div className="flex gap-1 justify-end" onClick={e => e.stopPropagation()}>
                       {activeTab === 'giacenza' && isAdmin && (
                         <button onClick={async () => { await magazzinoApi.update(a.id, { categoria: 'Gestione Guasti' }); load() }}
                           className="p-1.5 text-gray-400 hover:text-orange-600 hover:bg-orange-50 rounded" title="Sposta in ritirati">
                           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8l1 12a2 2 0 002 2h8a2 2 0 002-2l1-12M10 12v6m4-6v6" /></svg>
+                        </button>
+                      )}
+                      {activeTab === 'giacenza' && isAdmin && (
+                        <button onClick={() => setSpostaArticolo(a)}
+                          className="p-1.5 text-gray-400 hover:text-purple-600 hover:bg-purple-50 rounded" title="Sposta in sottomagazzino">
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
                         </button>
                       )}
                       <button onClick={() => setMovimentoArticolo(a)}
@@ -1264,6 +1521,12 @@ export default function MagazzinoPage() {
                                 <div className="flex items-center gap-2 flex-wrap">
                                   {a.categoria && <span className="text-xs text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded">{a.categoria}</span>}
                                   <StockBadge articolo={a} />
+                                  {a.sotto_magazzino && (
+                                    <span className="text-xs bg-purple-100 text-purple-700 px-1.5 py-0.5 rounded flex items-center gap-1">
+                                      <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+                                      {a.sotto_magazzino.nome}
+                                    </span>
+                                  )}
                                 </div>
                                 <p className="font-medium text-gray-800 text-sm mt-0.5">
                                   {[a.marca, a.modello].filter(Boolean).join(' ') || a.descrizione}
@@ -1294,6 +1557,17 @@ export default function MagazzinoPage() {
                                   >
                                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8l1 12a2 2 0 002 2h8a2 2 0 002-2l1-12M10 12v6m4-6v6" />
+                                    </svg>
+                                  </button>
+                                )}
+                                {activeTab === 'giacenza' && isAdmin && (
+                                  <button
+                                    onClick={() => setSpostaArticolo(a)}
+                                    className="p-1.5 text-gray-400 hover:text-purple-600 hover:bg-purple-50 rounded-lg"
+                                    title="Sposta in sottomagazzino"
+                                  >
+                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
                                     </svg>
                                   </button>
                                 )}
@@ -1444,6 +1718,29 @@ export default function MagazzinoPage() {
           articoli={articoliSelezionati}
           committente={commitenteSelezionato}
           onClose={() => setDdtModal(false)}
+        />
+      )}
+
+      {/* Modal: Sposta in sottomagazzino */}
+      {spostaArticolo && (
+        <SpostaModal
+          articolo={spostaArticolo}
+          sottoMagazzini={sottoMagazzini.filter(s => s.commitente === spostaArticolo.commitente)}
+          onConfirm={async (data) => {
+            await magazzinoApi.sposta(spostaArticolo.id, data)
+            setSpostaArticolo(null)
+            load()
+          }}
+          onCancel={() => setSpostaArticolo(null)}
+        />
+      )}
+
+      {/* Modal: Gestisci sottomagazzini */}
+      {sottoMagazziniModal && (
+        <SottoMagazziniManagerModal
+          commitente={sottoMagazziniModal}
+          sottoMagazzini={sottoMagazzini.filter(s => s.commitente === sottoMagazziniModal)}
+          onClose={() => { setSottoMagazziniModal(null); load() }}
         />
       )}
     </div>

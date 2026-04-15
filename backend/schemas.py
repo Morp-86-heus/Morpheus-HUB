@@ -458,6 +458,31 @@ class PaginatedMovimenti(BaseModel):
     items: List[MovimentoLogOut]
 
 
+class SottoMagazzinoCreate(BaseModel):
+    nome: str
+    descrizione: Optional[str] = None
+    commitente: str
+
+
+class SottoMagazzinoUpdate(BaseModel):
+    nome: Optional[str] = None
+    descrizione: Optional[str] = None
+
+
+class SottoMagazzinoOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    id: int
+    nome: str
+    descrizione: Optional[str] = None
+    commitente: str
+    created_at: Optional[datetime] = None
+
+
+class SpostamentoCreate(BaseModel):
+    sotto_magazzino_id: Optional[int] = None   # None = torna al magazzino principale
+    note: Optional[str] = None
+
+
 class ArticoloCreate(BaseModel):
     commitente: str
     cliente: str
@@ -503,6 +528,8 @@ class ArticoloOut(BaseModel):
     quantita_minima: Optional[int] = None
     fornitore: Optional[str] = None
     note: Optional[str] = None
+    sotto_magazzino_id: Optional[int] = None
+    sotto_magazzino: Optional[SottoMagazzinoOut] = None
     created_at: Optional[datetime] = None
     updated_at: Optional[datetime] = None
     movimenti: List[MovimentoOut] = []

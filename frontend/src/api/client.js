@@ -95,9 +95,14 @@ export const magazzinoApi = {
   update: (id, data) => api.put(`/magazzino/articoli/${id}`, data),
   delete: (id) => api.delete(`/magazzino/articoli/${id}`),
   addMovimento: (id, data) => api.post(`/magazzino/articoli/${id}/movimenti`, data),
+  sposta: (id, data) => api.post(`/magazzino/articoli/${id}/sposta`, data),
   cercaArticolo: (params) => api.get('/magazzino/cerca-articolo', { params }),
   categorie: () => api.get('/magazzino/categorie'),
   movimenti: (params) => api.get('/magazzino/movimenti', { params }),
+  sottoMagazzini: (commitente) => api.get('/magazzino/sotto-magazzini', { params: commitente ? { commitente } : {} }),
+  createSottoMagazzino: (data) => api.post('/magazzino/sotto-magazzini', data),
+  updateSottoMagazzino: (id, data) => api.put(`/magazzino/sotto-magazzini/${id}`, data),
+  deleteSottoMagazzino: (id) => api.delete(`/magazzino/sotto-magazzini/${id}`),
 }
 
 export const organizzazioniApi = {
