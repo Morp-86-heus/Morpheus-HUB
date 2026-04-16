@@ -278,7 +278,7 @@ def list_categorie(
     return [r[0] for r in rows]
 
 
-# ── Sottomagazzini ─────────────────────────────────────────────────────────────
+# ── Ubicazioni ─────────────────────────────────────────────────────────────────
 
 @router.get("/sotto-magazzini", response_model=List[schemas.SottoMagazzinoOut])
 def list_sotto_magazzini(
@@ -319,7 +319,7 @@ def update_sotto_magazzino(
 ):
     obj = db.query(SottoMagazzino).filter_by(id=sid, organizzazione_id=org_id).first()
     if not obj:
-        raise HTTPException(status_code=404, detail="Sottomagazzino non trovato")
+        raise HTTPException(status_code=404, detail="Ubicazione non trovata")
     for k, v in payload.model_dump(exclude_unset=True).items():
         setattr(obj, k, v)
     obj.updated_at = datetime.utcnow()
@@ -337,8 +337,8 @@ def delete_sotto_magazzino(
 ):
     obj = db.query(SottoMagazzino).filter_by(id=sid, organizzazione_id=org_id).first()
     if not obj:
-        raise HTTPException(status_code=404, detail="Sottomagazzino non trovato")
-    # Gli articoli che puntano a questo sottomagazzino tornano al principale (SET NULL via FK)
+        raise HTTPException(status_code=404, detail="Ubicazione non trovata")
+    # Gli articoli che puntano a questa ubicazione tornano al principale (SET NULL via FK)
     db.delete(obj)
     db.commit()
 
@@ -361,9 +361,9 @@ def sposta_articolo(
     if payload.sotto_magazzino_id is not None:
         dest = db.query(SottoMagazzino).filter_by(id=payload.sotto_magazzino_id, organizzazione_id=org_id).first()
         if not dest:
-            raise HTTPException(status_code=404, detail="Sottomagazzino non trovato")
+            raise HTTPException(status_code=404, detail="Ubicazione non trovata")
         if dest.commitente != articolo.commitente:
-            raise HTTPException(status_code=400, detail="Il sottomagazzino non appartiene allo stesso committente dell'articolo")
+            raise HTTPException(status_code=400, detail="L'ubicazione non appartiene allo stesso committente dell'articolo")
 
     provenienza = articolo.sotto_magazzino.nome if articolo.sotto_magazzino else "Magazzino principale"
     destinazione = dest.nome if dest else "Magazzino principale"
