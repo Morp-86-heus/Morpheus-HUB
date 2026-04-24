@@ -483,8 +483,7 @@ def chiudi_ticket(
     db.commit()
     log_action("ticket.close", user=current_user, org_id=org_id,
                risorsa_tipo="ticket", risorsa_id=ticket_id,
-               dettagli={"nr_intervento": obj.nr_intervento, "cliente": obj.cliente,
-                         "importo": payload.importo_totale})
+               dettagli={"nr_intervento": obj.nr_intervento, "cliente": obj.cliente})
     return obj
 
 

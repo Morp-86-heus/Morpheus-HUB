@@ -1,4 +1,4 @@
-"""add dispositivo to tickets
+"""add dispositivo e note_intervento to tickets
 
 Revision ID: 034
 Revises: 033
@@ -14,8 +14,10 @@ depends_on = None
 
 
 def upgrade():
-    op.add_column('tickets', sa.Column('dispositivo', sa.String(200), nullable=True))
+    op.execute('ALTER TABLE tickets ADD COLUMN IF NOT EXISTS dispositivo VARCHAR(200)')
+    op.execute('ALTER TABLE tickets ADD COLUMN IF NOT EXISTS note_intervento TEXT')
 
 
 def downgrade():
+    op.drop_column('tickets', 'note_intervento')
     op.drop_column('tickets', 'dispositivo')
