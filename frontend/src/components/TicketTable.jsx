@@ -233,7 +233,7 @@ export default function TicketTable({
             <tr
               key={t.id}
               onClick={() => onSelect && onSelect(t)}
-              className="hover:bg-blue-50 cursor-pointer transition-colors align-top"
+              className="hover:bg-blue-50 cursor-pointer transition-colors"
             >
               <td className="px-3 py-2 text-xs text-gray-400">
                 {t.id}
@@ -246,8 +246,8 @@ export default function TicketTable({
               <td className="px-3 py-2 text-sm font-medium">{t.commitente || '—'}</td>
               <td className="px-3 py-2 text-sm">{t.cliente || '—'}</td>
               <td className="px-3 py-2 text-sm font-mono text-xs">{t.nr_intervento || '—'}</td>
-              <td className="px-3 py-2 text-sm">{t.utente || '—'}</td>
-              <td className="px-3 py-2 text-sm">{t.citta || '—'}</td>
+              <td className="px-3 py-2 text-sm max-w-[150px] truncate" title={t.utente}>{t.utente || '—'}</td>
+              <td className="px-3 py-2 text-sm max-w-[120px] truncate" title={t.citta}>{t.citta || '—'}</td>
               <td className="px-3 py-2"><SLABadge sla={t.sla_scadenza} stato={t.stato} /></td>
               <td className="px-3 py-2">
                 <span className={`inline-block px-2 py-0.5 rounded text-xs font-medium ${STATO_COLORS[t.stato] || 'bg-gray-100 text-gray-600'}`}>
@@ -274,7 +274,7 @@ export default function TicketTable({
                 {t.data_gestione ? new Date(t.data_gestione).toLocaleDateString('it-IT') : '—'}
               </td>
               <td className="px-3 py-2 text-center text-sm text-gray-500">{t.nr_progressivo ?? '—'}</td>
-              <td className="px-3 py-2 text-sm text-gray-500 break-words">
+              <td className="px-3 py-2 text-sm text-gray-500 max-w-[200px] truncate" title={stripHtml(t.note)}>
                 {stripHtml(t.note) || '—'}
               </td>
             </tr>
