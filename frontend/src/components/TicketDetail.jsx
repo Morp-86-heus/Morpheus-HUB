@@ -62,14 +62,26 @@ function ChiusuraSection({ chiusura, ticketId }) {
   let parti = []
   try { parti = JSON.parse(chiusura.parti_json || '[]') } catch {}
 
+  let prestazioni = []
+  try { prestazioni = JSON.parse(chiusura.prestazioni_json || '[]') } catch {}
+
   let documenti = []
   try { documenti = JSON.parse(chiusura.documenti_json || '[]') } catch {}
 
   const fmtDate = (d) => d ? new Date(d).toLocaleDateString('it-IT') : '—'
 
+  const SubLabel = ({ children }) => (
+    <span className="text-xs text-gray-400 uppercase tracking-wide">{children}</span>
+  )
+  const SubVal = ({ children, mono }) => (
+    <span className={`text-xs text-gray-700 ${mono ? 'font-mono' : ''}`}>{children || '—'}</span>
+  )
+
   return (
-    <div className="col-span-2 mt-2 bg-green-50 border border-green-200 rounded-lg p-4">
-      <h4 className="text-xs font-semibold text-green-700 uppercase tracking-wide mb-3">Dati chiusura</h4>
+    <div className="col-span-2 mt-2 bg-green-50 border border-green-200 rounded-lg p-4 space-y-4">
+      <h4 className="text-xs font-semibold text-green-700 uppercase tracking-wide">Dati chiusura</h4>
+
+      {/* Tempi e intestazione */}
       <dl className="grid grid-cols-2 gap-3">
         <div>
           <dt className="text-xs text-gray-400">Inizio intervento</dt>
@@ -93,44 +105,106 @@ function ChiusuraSection({ chiusura, ticketId }) {
             <dd className="text-sm text-gray-800 whitespace-pre-wrap">{chiusura.note_chiusura}</dd>
           </div>
         )}
-        {parti.length > 0 && (
-          <div className="col-span-2">
-            <dt className="text-xs text-gray-400 mb-2">Parti sostituite</dt>
-            <div className="space-y-1">
-              {parti.map((p, i) => (
-                <div key={i} className="flex items-center gap-2 text-sm bg-white rounded px-3 py-1.5 border border-green-100">
-                  <span className="font-medium text-gray-800">{p.descrizione}</span>
-                  {p.seriale && <span className="text-gray-400 font-mono text-xs">S/N: {p.seriale}</span>}
-                  {p.tipo && (
-                    <span className={`ml-auto text-xs font-bold px-2 py-0.5 rounded ${p.tipo === 'DOA' ? 'bg-purple-100 text-purple-700' : 'bg-red-100 text-red-700'}`}>
-                      {p.tipo}
-                    </span>
-                  )}
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-        {documenti.length > 0 && (
-          <div className="col-span-2">
-            <dt className="text-xs text-gray-400 mb-2">Documenti allegati ({documenti.length})</dt>
-            <div className="grid grid-cols-3 gap-2">
-              {documenti.map((d, i) => {
-                const filename = d.path.split('/').pop()
-                const url = `/tickets/${ticketId}/documenti/${filename}`
-                return (
-                  <div key={i}
-                    className="rounded-lg overflow-hidden border border-green-100 bg-white hover:border-green-400 transition-colors">
-                    <AuthDoc src={url} alt={d.nome}
-                      className="w-full aspect-[4/3] object-cover" />
-                    <p className="text-xs text-gray-500 truncate px-2 py-1">{d.nome}</p>
-                  </div>
-                )
-              })}
-            </div>
-          </div>
-        )}
       </dl>
+
+      {/* Parti sostituite */}
+      {parti.length > 0 && (
+        <div>
+          <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Parti sostituite ({parti.length})</p>
+          <div className="space-y-2">
+            {parti.map((p, i) => (
+              <div key={i} className="bg-white border border-green-100 rounded-lg p-3 space-y-2">
+                {/* Parte guasta */}
+                <div>
+                  <div className="flex items-center gap-2 mb-1.5">
+                    <span className="text-xs font-semibold text-red-500 uppercase tracking-wide">Parte guasta</span>
+                    {p.tipo && (
+                      <span className={`text-xs font-bold px-1.5 py-0.5 rounded ${p.tipo === 'DOA' ? 'bg-purple-100 text-purple-700' : 'bg-red-100 text-red-700'}`}>
+                        {p.tipo}
+                      </span>
+                    )}
+                    {p.parte_ritirata && <span className="text-xs text-orange-600 font-medium">· Ritirata</span>}
+                    {p.parte_da_riparare && <span className="text-xs text-blue-600 font-medium">· Da riparare</span>}
+                  </div>
+                  <div className="grid grid-cols-2 gap-x-4 gap-y-1">
+                    <div><SubLabel>Descrizione</SubLabel><br /><SubVal>{p.descrizione}</SubVal></div>
+                    {p.modello && <div><SubLabel>Modello</SubLabel><br /><SubVal>{p.modello}</SubVal></div>}
+                    {p.seriale && <div><SubLabel>Seriale</SubLabel><br /><SubVal mono>{p.seriale}</SubVal></div>}
+                    {p.pn && <div><SubLabel>P/N</SubLabel><br /><SubVal mono>{p.pn}</SubVal></div>}
+                    {p.cespite && <div><SubLabel>Cespite</SubLabel><br /><SubVal mono>{p.cespite}</SubVal></div>}
+                    {p.difetto && <div className="col-span-2"><SubLabel>Difetto</SubLabel><br /><SubVal>{p.difetto}</SubVal></div>}
+                  </div>
+                </div>
+
+                {/* Ricambio installato */}
+                {(p.ricambio_descrizione || p.ricambio_seriale || p.ricambio_pn || p.ricambio_cespite) && (
+                  <>
+                    <div className="border-t border-dashed border-gray-200" />
+                    <div>
+                      <p className="text-xs font-semibold text-green-600 uppercase tracking-wide mb-1.5">Ricambio installato</p>
+                      <div className="grid grid-cols-2 gap-x-4 gap-y-1">
+                        {p.ricambio_descrizione && <div><SubLabel>Descrizione</SubLabel><br /><SubVal>{p.ricambio_descrizione}</SubVal></div>}
+                        {p.ricambio_modello && <div><SubLabel>Modello</SubLabel><br /><SubVal>{p.ricambio_modello}</SubVal></div>}
+                        {p.ricambio_seriale && <div><SubLabel>Seriale</SubLabel><br /><SubVal mono>{p.ricambio_seriale}</SubVal></div>}
+                        {p.ricambio_pn && <div><SubLabel>P/N</SubLabel><br /><SubVal mono>{p.ricambio_pn}</SubVal></div>}
+                        {p.ricambio_cespite && <div><SubLabel>Cespite</SubLabel><br /><SubVal mono>{p.ricambio_cespite}</SubVal></div>}
+                      </div>
+                    </div>
+                  </>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Prestazioni / listino */}
+      {prestazioni.length > 0 && (
+        <div>
+          <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Prestazioni ({prestazioni.length})</p>
+          <div className="bg-white border border-green-100 rounded-lg overflow-hidden">
+            <table className="w-full text-xs">
+              <thead className="bg-gray-50 text-gray-400 uppercase">
+                <tr>
+                  <th className="px-3 py-1.5 text-left font-semibold">Descrizione</th>
+                  <th className="px-3 py-1.5 text-center font-semibold">Q.tà</th>
+                  <th className="px-3 py-1.5 text-right font-semibold">Prezzo</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100">
+                {prestazioni.map((pr, i) => (
+                  <tr key={i}>
+                    <td className="px-3 py-1.5 text-gray-800">{pr.descrizione}</td>
+                    <td className="px-3 py-1.5 text-center text-gray-600">{pr.quantita ?? 1} {pr.unita_misura || ''}</td>
+                    <td className="px-3 py-1.5 text-right text-gray-700 font-mono">
+                      {pr.prezzo ? `€ ${(parseFloat(String(pr.prezzo).replace(',', '.')) * (pr.quantita ?? 1)).toFixed(2)}` : '—'}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {/* Documenti allegati */}
+      {documenti.length > 0 && (
+        <div>
+          <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Documenti allegati ({documenti.length})</p>
+          <div className="grid grid-cols-3 gap-2">
+            {documenti.map((d, i) => {
+              const filename = d.path.split('/').pop()
+              const url = `/tickets/${ticketId}/documenti/${filename}`
+              return (
+                <div key={i} className="rounded-lg overflow-hidden border border-green-100 bg-white hover:border-green-400 transition-colors">
+                  <AuthDoc src={url} alt={d.nome} className="w-full aspect-[4/3] object-cover" />
+                  <p className="text-xs text-gray-500 truncate px-2 py-1">{d.nome}</p>
+                </div>
+              )
+            })}
+          </div>
+        </div>
+      )}
     </div>
   )
 }
