@@ -56,9 +56,10 @@ def build_query(
     db: Session,
     org_id: int,
     stato: Optional[List[str]] = None,
-    commitente: Optional[str] = None,
-    cliente: Optional[str] = None,
-    tecnico: Optional[str] = None,
+    commitente: Optional[List[str]] = None,
+    cliente: Optional[List[str]] = None,
+    tecnico: Optional[List[str]] = None,
+    citta: Optional[List[str]] = None,
     data_da: Optional[str] = None,
     data_a: Optional[str] = None,
     sla_scaduta: Optional[bool] = None,
@@ -68,11 +69,13 @@ def build_query(
     if stato:
         q = q.filter(Ticket.stato.in_(stato))
     if commitente:
-        q = q.filter(Ticket.commitente == commitente)
+        q = q.filter(Ticket.commitente.in_(commitente))
     if cliente:
-        q = q.filter(Ticket.cliente == cliente)
+        q = q.filter(Ticket.cliente.in_(cliente))
     if tecnico:
-        q = q.filter(Ticket.tecnico == tecnico)
+        q = q.filter(Ticket.tecnico.in_(tecnico))
+    if citta:
+        q = q.filter(Ticket.citta.in_(citta))
     if data_da:
         q = q.filter(Ticket.data_gestione >= data_da)
     if data_a:
@@ -115,9 +118,10 @@ def next_progressivo(
 @router.get("/export/excel")
 def export_excel(
     stato: Optional[List[str]] = Query(None),
-    commitente: Optional[str] = None,
-    cliente: Optional[str] = None,
-    tecnico: Optional[str] = None,
+    commitente: Optional[List[str]] = Query(None),
+    cliente: Optional[List[str]] = Query(None),
+    tecnico: Optional[List[str]] = Query(None),
+    citta: Optional[List[str]] = Query(None),
     data_da: Optional[str] = None,
     data_a: Optional[str] = None,
     sla_scaduta: Optional[bool] = None,
@@ -128,7 +132,7 @@ def export_excel(
 ):
     import openpyxl
 
-    q = build_query(db, org_id, stato, commitente, cliente, tecnico, data_da, data_a, sla_scaduta, search)
+    q = build_query(db, org_id, stato, commitente, cliente, tecnico, citta, data_da, data_a, sla_scaduta, search)
     tickets = q.all()
 
     wb = openpyxl.Workbook()
@@ -154,9 +158,10 @@ def export_excel(
 @router.get("", response_model=schemas.PaginatedTickets)
 def list_tickets(
     stato: Optional[List[str]] = Query(None),
-    commitente: Optional[str] = None,
-    cliente: Optional[str] = None,
-    tecnico: Optional[str] = None,
+    commitente: Optional[List[str]] = Query(None),
+    cliente: Optional[List[str]] = Query(None),
+    tecnico: Optional[List[str]] = Query(None),
+    citta: Optional[List[str]] = Query(None),
     data_da: Optional[str] = None,
     data_a: Optional[str] = None,
     sla_scaduta: Optional[bool] = None,
@@ -169,7 +174,7 @@ def list_tickets(
     current_user: User = Depends(_tutti),
     org_id: int = Depends(get_active_org_id),
 ):
-    q = build_query(db, org_id, stato, commitente, cliente, tecnico, data_da, data_a, sla_scaduta, search)
+    q = build_query(db, org_id, stato, commitente, cliente, tecnico, citta, data_da, data_a, sla_scaduta, search)
 
     if current_user.ruolo == RuoloEnum.tecnico:
         if not check_permission("tecnico", "ticket.view_all", org_id, db):

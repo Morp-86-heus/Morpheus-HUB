@@ -1,5 +1,4 @@
-import { useState, useEffect } from 'react'
-import { lookupApi } from '../api/client'
+import { useState } from 'react'
 
 const TUTTI_STATI = ['In gestione', 'Attesa parti', 'Sospesa', 'Chiusa', 'Annullata']
 
@@ -14,23 +13,7 @@ const STATO_ON = {
 const STATO_OFF = 'bg-white text-gray-300 border-gray-200 line-through'
 
 export default function FilterBar({ filters, onChange, stati = TUTTI_STATI }) {
-  const [commitenti, setCommitenti] = useState([])
-  const [clienti, setClienti] = useState([])
-  const [tecnici, setTecnici] = useState([])
   const [showAdvanced, setShowAdvanced] = useState(false)
-
-  useEffect(() => {
-    lookupApi.commitenti().then(r => setCommitenti(r.data))
-    lookupApi.tecnici().then(r => setTecnici(r.data))
-  }, [])
-
-  useEffect(() => {
-    if (filters.commitente) {
-      lookupApi.clienti(filters.commitente).then(r => setClienti(r.data))
-    } else {
-      lookupApi.clienti().then(r => setClienti(r.data))
-    }
-  }, [filters.commitente])
 
   const toggleStato = (s) => {
     const current = filters.stato || stati
@@ -41,7 +24,7 @@ export default function FilterBar({ filters, onChange, stati = TUTTI_STATI }) {
 
   const set = (key, val) => onChange({ ...filters, [key]: val || undefined, page: 1 })
 
-  const selectCls = "border border-gray-200 rounded-xl px-3 py-2 text-sm bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-400"
+  const hasAdvancedActive = filters.sla_scaduta || filters.data_da || filters.data_a
 
   return (
     <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 space-y-3">
@@ -86,34 +69,21 @@ export default function FilterBar({ filters, onChange, stati = TUTTI_STATI }) {
         <button
           onClick={() => setShowAdvanced(!showAdvanced)}
           className={`flex items-center gap-1.5 px-3 py-2 text-sm border rounded-xl transition-colors ${
-            showAdvanced ? 'bg-blue-50 border-blue-300 text-blue-700 font-semibold' : 'border-gray-200 text-gray-500 hover:bg-gray-50'
+            showAdvanced || hasAdvancedActive
+              ? 'bg-blue-50 border-blue-300 text-blue-700 font-semibold'
+              : 'border-gray-200 text-gray-500 hover:bg-gray-50'
           }`}
         >
           <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2a1 1 0 01-.293.707L13 13.414V19a1 1 0 01-.553.894l-4 2A1 1 0 017 21v-7.586L3.293 6.707A1 1 0 013 6V4z" />
           </svg>
-          Filtri
+          Filtri{hasAdvancedActive ? ' •' : ''}
         </button>
       </div>
 
       {/* Advanced filters */}
       {showAdvanced && (
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 pt-3 border-t border-gray-100">
-          <select value={filters.commitente || ''} onChange={e => set('commitente', e.target.value)} className={selectCls}>
-            <option value="">Tutti i commitenti</option>
-            {commitenti.map(c => <option key={c.id} value={c.nome}>{c.nome}</option>)}
-          </select>
-
-          <select value={filters.cliente || ''} onChange={e => set('cliente', e.target.value)} className={selectCls}>
-            <option value="">Tutti i clienti</option>
-            {clienti.map(c => <option key={c.id} value={c.nome}>{c.nome}</option>)}
-          </select>
-
-          <select value={filters.tecnico || ''} onChange={e => set('tecnico', e.target.value)} className={selectCls}>
-            <option value="">Tutti i tecnici</option>
-            {tecnici.map(t => <option key={t.id} value={t.nome}>{t.nome}</option>)}
-          </select>
-
+        <div className="flex flex-wrap gap-3 pt-3 border-t border-gray-100 items-center">
           <label className="flex items-center gap-2 px-3 py-2 border border-gray-200 rounded-xl cursor-pointer hover:bg-gray-50 transition-colors">
             <input
               type="checkbox"
@@ -124,13 +94,35 @@ export default function FilterBar({ filters, onChange, stati = TUTTI_STATI }) {
             <span className="text-xs font-medium text-gray-600">SLA scaduta</span>
           </label>
 
-          <input type="date" value={filters.data_da || ''} onChange={e => set('data_da', e.target.value)}
-            className={selectCls} placeholder="Data da" />
-          <input type="date" value={filters.data_a || ''} onChange={e => set('data_a', e.target.value)}
-            className={selectCls} placeholder="Data a" />
+          <input
+            type="date"
+            value={filters.data_da || ''}
+            onChange={e => set('data_da', e.target.value)}
+            className="border border-gray-200 rounded-xl px-3 py-2 text-sm bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-400"
+            placeholder="Data da"
+          />
+          <input
+            type="date"
+            value={filters.data_a || ''}
+            onChange={e => set('data_a', e.target.value)}
+            className="border border-gray-200 rounded-xl px-3 py-2 text-sm bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-400"
+            placeholder="Data a"
+          />
 
           <button
-            onClick={() => onChange({ page: 1, stato: [...stati] })}
+            onClick={() => onChange({
+              ...filters,
+              stato: [...stati],
+              sla_scaduta: undefined,
+              data_da: undefined,
+              data_a: undefined,
+              search: undefined,
+              commitente: [],
+              cliente: [],
+              tecnico: [],
+              citta: [],
+              page: 1,
+            })}
             className="flex items-center gap-1.5 text-sm text-red-500 hover:text-red-700 transition-colors"
           >
             <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>

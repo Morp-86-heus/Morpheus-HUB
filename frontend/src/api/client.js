@@ -68,6 +68,7 @@ export const lookupApi = {
   clienti: (commitente) => api.get('/lookup/clienti', { params: commitente ? { commitente } : {} }),
   tecnici: () => api.get('/lookup/tecnici'),
   stati: () => api.get('/lookup/stati'),
+  citta: () => api.get('/lookup/citta'),
 }
 
 export const statsApi = {

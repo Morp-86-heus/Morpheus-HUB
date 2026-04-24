@@ -12,7 +12,7 @@ const TUTTI_STATI = ['In gestione', 'Attesa parti', 'Sospesa', 'Chiusa', 'Annull
 function filtersFromUrl(searchParams) {
   const stato = searchParams.getAll('stato')
   const sla_scaduta = searchParams.get('sla_scaduta') === 'true'
-  const tecnico = searchParams.get('tecnico') || undefined
+  const tecnico = searchParams.getAll('tecnico')
   return {
     page: 1,
     page_size: 50,
@@ -20,7 +20,10 @@ function filtersFromUrl(searchParams) {
     order_dir: 'asc',
     stato: stato.length > 0 ? stato : [...STATI_APERTI],
     sla_scaduta: sla_scaduta || undefined,
-    tecnico,
+    tecnico: tecnico.length > 0 ? tecnico : [],
+    commitente: [],
+    cliente: [],
+    citta: [],
   }
 }
 
@@ -33,6 +36,7 @@ export default function TicketsPage() {
   const [selected, setSelected] = useState(null)
   const [filters, setFilters] = useState(() => filtersFromUrl(searchParams))
   const [tecnicoColors, setTecnicoColors] = useState({})
+  const [lookupData, setLookupData] = useState({ commitente: [], cliente: [], tecnico: [], citta: [], stato: STATI_APERTI })
 
   // Aggiorna i filtri se cambia l'URL (navigazione da dashboard)
   useEffect(() => {
@@ -61,10 +65,22 @@ export default function TicketsPage() {
 
   useEffect(() => { fetchTickets() }, [fetchTickets])
   useEffect(() => {
-    lookupApi.tecnici().then(r => {
+    Promise.all([
+      lookupApi.commitenti(),
+      lookupApi.clienti(),
+      lookupApi.tecnici(),
+      lookupApi.citta(),
+    ]).then(([c, cl, t, ci]) => {
       const map = {}
-      r.data.forEach(t => { if (t.colore) map[t.nome] = t.colore })
+      t.data.forEach(x => { if (x.colore) map[x.nome] = x.colore })
       setTecnicoColors(map)
+      setLookupData({
+        commitente: c.data.map(x => x.nome),
+        cliente: cl.data.map(x => x.nome),
+        tecnico: t.data.map(x => x.nome),
+        citta: ci.data,
+        stato: STATI_APERTI,
+      })
     }).catch(() => {})
   }, [])
 
@@ -75,6 +91,10 @@ export default function TicketsPage() {
       order_dir: f.order_by === field && f.order_dir === 'asc' ? 'desc' : 'asc',
       page: 1,
     }))
+  }
+
+  const handleColumnFilter = (field, values) => {
+    setFilters(f => ({ ...f, [field]: values, page: 1 }))
   }
 
   const totalPages = Math.ceil(total / (filters.page_size || 50))
@@ -129,6 +149,17 @@ export default function TicketsPage() {
             orderBy={filters.order_by}
             orderDir={filters.order_dir}
             tecnicoColors={tecnicoColors}
+            columnFilters={{
+              commitente: filters.commitente || [],
+              cliente: filters.cliente || [],
+              tecnico: filters.tecnico || [],
+              citta: filters.citta || [],
+              stato: filters.stato || [],
+            }}
+            onColumnFilter={handleColumnFilter}
+            lookupData={lookupData}
+            dateFilter={{ data_da: filters.data_da, data_a: filters.data_a }}
+            onDateFilter={(da, a) => setFilters(f => ({ ...f, data_da: da, data_a: a, page: 1 }))}
           />
         )}
 

@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import or_
 from typing import List, Optional
 from database import get_db
-from models import LookupCommitente, LookupCliente, LookupTecnico, User, RuoloEnum
+from models import LookupCommitente, LookupCliente, LookupTecnico, User, RuoloEnum, Ticket
 from auth import require_roles, get_active_org_id
 import schemas
 
@@ -200,3 +200,19 @@ def get_tecnici(
 @router.get("/stati")
 def get_stati():
     return STATI
+
+
+@router.get("/citta")
+def get_citta(
+    db: Session = Depends(get_db),
+    _: User = Depends(_any),
+    org_id: int = Depends(get_active_org_id),
+):
+    rows = (
+        db.query(Ticket.citta)
+        .filter(Ticket.organizzazione_id == org_id, Ticket.citta.isnot(None), Ticket.citta != "")
+        .distinct()
+        .order_by(Ticket.citta)
+        .all()
+    )
+    return [r[0] for r in rows]

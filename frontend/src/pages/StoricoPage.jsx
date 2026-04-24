@@ -15,6 +15,7 @@ export default function StoricoPage() {
   const [error, setError] = useState(null)
   const [selected, setSelected] = useState(null)
   const [tecnicoColors, setTecnicoColors] = useState({})
+  const [lookupData, setLookupData] = useState({ commitente: [], cliente: [], tecnico: [], citta: [], stato: STATI_STORICO })
 
   const [filters, setFilters] = useState({
     page: 1,
@@ -22,6 +23,10 @@ export default function StoricoPage() {
     order_by: 'id',
     order_dir: 'desc',
     stato: [...STATI_STORICO],
+    commitente: [],
+    cliente: [],
+    tecnico: [],
+    citta: [],
   })
 
   const fetchTickets = useCallback(async () => {
@@ -39,11 +44,24 @@ export default function StoricoPage() {
   }, [filters])
 
   useEffect(() => { fetchTickets() }, [fetchTickets])
+
   useEffect(() => {
-    lookupApi.tecnici().then(r => {
+    Promise.all([
+      lookupApi.commitenti(),
+      lookupApi.clienti(),
+      lookupApi.tecnici(),
+      lookupApi.citta(),
+    ]).then(([c, cl, t, ci]) => {
       const map = {}
-      r.data.forEach(t => { if (t.colore) map[t.nome] = t.colore })
+      t.data.forEach(x => { if (x.colore) map[x.nome] = x.colore })
       setTecnicoColors(map)
+      setLookupData({
+        commitente: c.data.map(x => x.nome),
+        cliente: cl.data.map(x => x.nome),
+        tecnico: t.data.map(x => x.nome),
+        citta: ci.data,
+        stato: STATI_STORICO,
+      })
     }).catch(() => {})
   }, [])
 
@@ -54,6 +72,10 @@ export default function StoricoPage() {
       order_dir: f.order_by === field && f.order_dir === 'asc' ? 'desc' : 'asc',
       page: 1,
     }))
+  }
+
+  const handleColumnFilter = (field, values) => {
+    setFilters(f => ({ ...f, [field]: values, page: 1 }))
   }
 
   const totalPages = Math.ceil(total / (filters.page_size || 50))
@@ -106,6 +128,17 @@ export default function StoricoPage() {
             orderBy={filters.order_by}
             orderDir={filters.order_dir}
             tecnicoColors={tecnicoColors}
+            columnFilters={{
+              commitente: filters.commitente || [],
+              cliente: filters.cliente || [],
+              tecnico: filters.tecnico || [],
+              citta: filters.citta || [],
+              stato: filters.stato || [],
+            }}
+            onColumnFilter={handleColumnFilter}
+            lookupData={lookupData}
+            dateFilter={{ data_da: filters.data_da, data_a: filters.data_a }}
+            onDateFilter={(da, a) => setFilters(f => ({ ...f, data_da: da, data_a: a, page: 1 }))}
           />
         )}
 
