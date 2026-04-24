@@ -1,5 +1,10 @@
 import SLABadge from './SLABadge'
 
+const stripHtml = (html) => {
+  if (!html) return ''
+  return html.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim()
+}
+
 const STATO_COLORS = {
   'In gestione': 'bg-blue-100 text-blue-700',
   'Attesa parti': 'bg-orange-100 text-orange-700',
@@ -85,8 +90,8 @@ export default function TicketTable({ tickets, onSelect, onSort, orderBy, orderD
               <td className="px-3 py-2 text-center text-sm text-gray-500">
                 {t.nr_progressivo ?? '—'}
               </td>
-              <td className="px-3 py-2 text-sm text-gray-500 max-w-[200px] truncate" title={t.note || ''}>
-                {t.note || '—'}
+              <td className="px-3 py-2 text-sm text-gray-500 max-w-[200px] truncate" title={stripHtml(t.note)}>
+                {stripHtml(t.note) || '—'}
               </td>
             </tr>
           ))}
