@@ -29,5 +29,16 @@ def set_rls_org(db: Session, org_id: int | None) -> None:
 
 
 def init_db():
+    import subprocess, sys
+    # Esegue tutte le migrazioni Alembic pendenti prima di avviare l'app
+    result = subprocess.run(
+        [sys.executable, "-m", "alembic", "upgrade", "head"],
+        capture_output=True, text=True
+    )
+    if result.returncode != 0:
+        print("Alembic upgrade FAILED:\n", result.stderr, flush=True)
+    else:
+        print("Alembic upgrade OK:\n", result.stdout or "(no output)", flush=True)
+    # Fallback: crea tabelle non ancora gestite da migrazioni
     from models import Base
     Base.metadata.create_all(bind=engine)
