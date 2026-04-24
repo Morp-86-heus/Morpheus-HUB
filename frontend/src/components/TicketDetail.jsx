@@ -78,7 +78,7 @@ function ChiusuraSection({ chiusura, ticketId }) {
   )
 
   return (
-    <div className="col-span-2 mt-2 bg-green-50 border border-green-200 rounded-lg p-4 space-y-4">
+    <div className="col-span-full mt-2 bg-green-50 border border-green-200 rounded-lg p-4 space-y-4">
       <h4 className="text-xs font-semibold text-green-700 uppercase tracking-wide">Dati chiusura</h4>
 
       {/* Tempi e intestazione */}
@@ -214,6 +214,7 @@ export default function TicketDetail({ ticket, onClose, onDeleted, onRefresh }) 
   const { can } = useAuth()
   const [deleting, setDeleting] = useState(false)
   const [showCloseModal, setShowCloseModal] = useState(false)
+  const [expanded, setExpanded] = useState(false)
 
   if (!ticket) return null
 
@@ -236,7 +237,7 @@ export default function TicketDetail({ ticket, onClose, onDeleted, onRefresh }) 
     <>
       <div className="fixed inset-0 z-50 flex justify-end">
         <div className="absolute inset-0 bg-black/30" onClick={onClose} />
-        <div className="modal-panel relative w-full max-w-md bg-white shadow-2xl overflow-y-auto flex flex-col">
+        <div className={`modal-panel relative w-full ${expanded ? 'max-w-[calc(100vw-16rem)]' : 'max-w-md'} bg-white shadow-2xl overflow-y-auto flex flex-col transition-all duration-200`}>
           {/* Header */}
           <div className="flex items-center justify-between px-5 py-4 border-b bg-gray-50">
             <div>
@@ -245,13 +246,30 @@ export default function TicketDetail({ ticket, onClose, onDeleted, onRefresh }) 
                 {ticket.stato}
               </span>
             </div>
-            <button onClick={onClose} className="text-gray-400 hover:text-gray-600 text-xl leading-none">✕</button>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setExpanded(e => !e)}
+                className="text-gray-400 hover:text-gray-600 p-1 rounded hover:bg-gray-200 transition-colors"
+                title={expanded ? 'Comprimi pannello' : 'Espandi pannello'}
+              >
+                {expanded ? (
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 9L4 4m0 0h5m-5 0v5m6 6l5 5m0 0h-5m5 0v-5" />
+                  </svg>
+                ) : (
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
+                  </svg>
+                )}
+              </button>
+              <button onClick={onClose} className="text-gray-400 hover:text-gray-600 text-xl leading-none">✕</button>
+            </div>
           </div>
 
           {/* Body */}
-          <dl className="flex-1 p-5 grid grid-cols-2 gap-4">
+          <dl className={`flex-1 p-5 grid gap-4 ${expanded ? 'grid-cols-3' : 'grid-cols-2'}`}>
             {ticket.parent_ticket_id && (
-              <div className="col-span-2 px-3 py-2 bg-orange-50 border border-orange-200 rounded-lg text-xs text-orange-700">
+              <div className="col-span-full px-3 py-2 bg-orange-50 border border-orange-200 rounded-lg text-xs text-orange-700">
                 ↩ {ticket.numero_intervento}° intervento — seguito del ticket{' '}
                 <span className="font-bold font-mono">#{ticket.parent_ticket_id}</span>
               </div>
@@ -266,11 +284,11 @@ export default function TicketDetail({ ticket, onClose, onDeleted, onRefresh }) 
             <Field label="Città" value={ticket.citta} />
             <Field label="Dispositivo" value={ticket.dispositivo} />
             <Field label="N° progressivo" value={ticket.nr_progressivo ?? null} />
-            <div className="col-span-2">
+            <div className="col-span-full">
               <Field label="LDV" value={ticket.ldv} />
             </div>
             {ticket.note && (
-              <div className="col-span-2">
+              <div className="col-span-full">
                 <dt className="text-xs text-gray-400 uppercase tracking-wide">Note</dt>
                 <dd
                   className="mt-0.5 text-sm text-gray-800 rich-note"
@@ -282,7 +300,7 @@ export default function TicketDetail({ ticket, onClose, onDeleted, onRefresh }) 
             {/* Dati chiusura se presenti */}
             <ChiusuraSection chiusura={ticket.chiusura} ticketId={ticket.id} />
 
-            <div className="col-span-2 text-xs text-gray-300">
+            <div className="col-span-full text-xs text-gray-300">
               <div>Creato: {ticket.created_at ? new Date(ticket.created_at).toLocaleString('it-IT') : '—'}</div>
               <div>Aggiornato: {ticket.updated_at ? new Date(ticket.updated_at).toLocaleString('it-IT') : '—'}</div>
             </div>
