@@ -90,6 +90,8 @@ def build_query(
             Ticket.utente.ilike(pattern),
             Ticket.note.ilike(pattern),
             Ticket.citta.ilike(pattern),
+            Ticket.commitente.ilike(pattern),
+            Ticket.cliente.ilike(pattern),
         ))
     return q
 
