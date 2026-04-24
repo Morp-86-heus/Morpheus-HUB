@@ -272,6 +272,7 @@ class LookupTecnico(BaseModel):
     model_config = ConfigDict(from_attributes=True)
     id: int
     nome: str
+    colore: Optional[str] = None
 
 
 class DashboardStats(BaseModel):
@@ -553,6 +554,7 @@ class UserCreate(BaseModel):
     password: str
     ruolo: RuoloEnum = RuoloEnum.tecnico
     organizzazione_id: Optional[int] = None
+    colore: Optional[str] = None
 
     @field_validator("password")
     @classmethod
@@ -569,6 +571,7 @@ class UserUpdate(BaseModel):
     ruolo: Optional[RuoloEnum] = None
     attivo: Optional[bool] = None
     organizzazione_id: Optional[int] = None
+    colore: Optional[str] = None
 
     @field_validator("password")
     @classmethod
@@ -596,6 +599,7 @@ class UserOut(BaseModel):
     org_piano: Optional[str] = None
     created_at: Optional[datetime] = None
     licenza_accettata: bool = False
+    colore: Optional[str] = None
 
 
 class Token(BaseModel):

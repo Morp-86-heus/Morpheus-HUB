@@ -194,7 +194,7 @@ def get_tecnici(
         .order_by(User.cognome, User.nome)
         .all()
     )
-    return [{"id": u.id, "nome": u.nome_completo} for u in users]
+    return [{"id": u.id, "nome": u.nome_completo, "colore": u.colore} for u in users]
 
 
 @router.get("/stati")

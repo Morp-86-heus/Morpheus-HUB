@@ -10,6 +10,13 @@ const PASSWORD_RULES = [
 ]
 const isPasswordValid = (p) => PASSWORD_RULES.every(r => r.test(p))
 
+const PALETTE = [
+  '#ef4444','#f97316','#f59e0b','#eab308',
+  '#84cc16','#22c55e','#14b8a6','#06b6d4',
+  '#3b82f6','#6366f1','#8b5cf6','#a855f7',
+  '#ec4899','#f43f5e','#64748b','#1e293b',
+]
+
 const RUOLI = ['proprietario', 'amministratore', 'commerciale', 'tecnico']
 const RUOLO_COLORS = {
   proprietario: 'bg-purple-100 text-purple-700',
@@ -18,7 +25,7 @@ const RUOLO_COLORS = {
   tecnico: 'bg-orange-100 text-orange-700',
 }
 
-const emptyForm = { email: '', nome: '', cognome: '', telefono: '', password: '', ruolo: 'tecnico' }
+const emptyForm = { email: '', nome: '', cognome: '', telefono: '', password: '', ruolo: 'tecnico', colore: null }
 
 export default function UsersPage() {
   const { user: me } = useAuth()
@@ -55,6 +62,7 @@ export default function UsersPage() {
           cognome: form.cognome,
           telefono: form.telefono || null,
           ruolo: form.ruolo,
+          colore: form.colore || null,
         }
         if (form.password) payload.password = form.password
         await axios.put(`/api/auth/users/${editing}`, payload)
@@ -86,6 +94,7 @@ export default function UsersPage() {
       telefono: u.telefono || '',
       password: '',
       ruolo: u.ruolo,
+      colore: u.colore || null,
     })
   }
 
@@ -177,6 +186,45 @@ export default function UsersPage() {
               </select>
             </div>
 
+            <div>
+              <label className={labelCls}>Colore etichetta</label>
+              <div className="flex flex-wrap gap-2 mt-1">
+                {PALETTE.map(c => (
+                  <button
+                    key={c}
+                    type="button"
+                    onClick={() => set('colore', form.colore === c ? null : c)}
+                    className="w-6 h-6 rounded-full border-2 transition-transform hover:scale-110"
+                    style={{
+                      backgroundColor: c,
+                      borderColor: form.colore === c ? '#1e293b' : 'transparent',
+                      boxShadow: form.colore === c ? '0 0 0 2px white, 0 0 0 4px ' + c : 'none',
+                    }}
+                    title={c}
+                  />
+                ))}
+                {form.colore && (
+                  <button
+                    type="button"
+                    onClick={() => set('colore', null)}
+                    className="w-6 h-6 rounded-full border-2 border-gray-300 bg-white text-gray-400 text-xs flex items-center justify-center hover:border-red-400 hover:text-red-400 transition-colors"
+                    title="Rimuovi colore"
+                  >✕</button>
+                )}
+              </div>
+              {form.colore && (
+                <div className="mt-2 flex items-center gap-2">
+                  <span className="text-xs text-gray-400">Anteprima:</span>
+                  <span
+                    className="px-2 py-0.5 rounded text-xs font-semibold"
+                    style={{ backgroundColor: form.colore + '22', color: form.colore, border: `1px solid ${form.colore}44` }}
+                  >
+                    {form.nome || 'Tecnico'}
+                  </span>
+                </div>
+              )}
+            </div>
+
             {error && <div className="text-sm text-red-600 bg-red-50 border border-red-100 px-3 py-2.5 rounded-xl">{error}</div>}
 
             <div className="flex gap-2 pt-1">
@@ -211,9 +259,14 @@ export default function UsersPage() {
               {users.map(u => (
                 <tr key={u.id} className="hover:bg-blue-50/30 transition-colors">
                   <td className="px-5 py-3">
-                    <div className="text-sm font-medium text-gray-800">
-                      {u.nome_completo}
-                      {u.id === me?.id && <span className="ml-1 text-xs text-blue-400">(tu)</span>}
+                    <div className="flex items-center gap-2">
+                      {u.colore && (
+                        <span className="w-3 h-3 rounded-full shrink-0" style={{ backgroundColor: u.colore }} />
+                      )}
+                      <span className="text-sm font-medium text-gray-800">
+                        {u.nome_completo}
+                        {u.id === me?.id && <span className="ml-1 text-xs text-blue-400">(tu)</span>}
+                      </span>
                     </div>
                   </td>
                   <td className="px-5 py-3 text-sm text-gray-500">{u.email}</td>

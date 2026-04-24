@@ -120,6 +120,7 @@ class User(Base):
     password_reset_expiry = Column(DateTime, nullable=True)
     licenza_accettata = Column(Boolean, nullable=False, default=False, server_default='false')
     licenza_accettata_at = Column(DateTime, nullable=True)
+    colore = Column(String(7), nullable=True)
 
     organizzazione = relationship("Organizzazione", back_populates="users")
 

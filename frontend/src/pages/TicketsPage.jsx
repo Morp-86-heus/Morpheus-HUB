@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
-import { ticketsApi } from '../api/client'
+import { ticketsApi, lookupApi } from '../api/client'
 import { useAuth } from '../contexts/AuthContext'
 import FilterBar from '../components/FilterBar'
 import TicketTable from '../components/TicketTable'
@@ -32,6 +32,7 @@ export default function TicketsPage() {
   const [loading, setLoading] = useState(false)
   const [selected, setSelected] = useState(null)
   const [filters, setFilters] = useState(() => filtersFromUrl(searchParams))
+  const [tecnicoColors, setTecnicoColors] = useState({})
 
   // Aggiorna i filtri se cambia l'URL (navigazione da dashboard)
   useEffect(() => {
@@ -59,6 +60,13 @@ export default function TicketsPage() {
   }, [filters])
 
   useEffect(() => { fetchTickets() }, [fetchTickets])
+  useEffect(() => {
+    lookupApi.tecnici().then(r => {
+      const map = {}
+      r.data.forEach(t => { if (t.colore) map[t.nome] = t.colore })
+      setTecnicoColors(map)
+    }).catch(() => {})
+  }, [])
 
   const handleSort = (field) => {
     setFilters(f => ({
@@ -120,6 +128,7 @@ export default function TicketsPage() {
             onSort={handleSort}
             orderBy={filters.order_by}
             orderDir={filters.order_dir}
+            tecnicoColors={tecnicoColors}
           />
         )}
 

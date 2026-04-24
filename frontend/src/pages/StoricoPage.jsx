@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
-import { ticketsApi } from '../api/client'
+import { ticketsApi, lookupApi } from '../api/client'
 import { useAuth } from '../contexts/AuthContext'
 import FilterBar from '../components/FilterBar'
 import TicketTable from '../components/TicketTable'
@@ -14,6 +14,8 @@ export default function StoricoPage() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
   const [selected, setSelected] = useState(null)
+  const [tecnicoColors, setTecnicoColors] = useState({})
+
   const [filters, setFilters] = useState({
     page: 1,
     page_size: 50,
@@ -37,6 +39,13 @@ export default function StoricoPage() {
   }, [filters])
 
   useEffect(() => { fetchTickets() }, [fetchTickets])
+  useEffect(() => {
+    lookupApi.tecnici().then(r => {
+      const map = {}
+      r.data.forEach(t => { if (t.colore) map[t.nome] = t.colore })
+      setTecnicoColors(map)
+    }).catch(() => {})
+  }, [])
 
   const handleSort = (field) => {
     setFilters(f => ({
@@ -96,6 +105,7 @@ export default function StoricoPage() {
             onSort={handleSort}
             orderBy={filters.order_by}
             orderDir={filters.order_dir}
+            tecnicoColors={tecnicoColors}
           />
         )}
 

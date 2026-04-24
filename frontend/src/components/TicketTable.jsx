@@ -13,7 +13,7 @@ const STATO_COLORS = {
   'Annullata': 'bg-red-100 text-red-600',
 }
 
-export default function TicketTable({ tickets, onSelect, onSort, orderBy, orderDir }) {
+export default function TicketTable({ tickets, onSelect, onSort, orderBy, orderDir, tecnicoColors = {} }) {
   const th = (label, field) => (
     <th
       className={`px-3 py-2 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 select-none ${
@@ -83,7 +83,22 @@ export default function TicketTable({ tickets, onSelect, onSort, orderBy, orderD
                   {t.stato || '—'}
                 </span>
               </td>
-              <td className="px-3 py-2 text-sm">{t.tecnico || '—'}</td>
+              <td className="px-3 py-2 text-sm">
+                {t.tecnico ? (
+                  tecnicoColors[t.tecnico] ? (
+                    <span
+                      className="inline-block px-2 py-0.5 rounded text-xs font-semibold"
+                      style={{
+                        backgroundColor: tecnicoColors[t.tecnico] + '22',
+                        color: tecnicoColors[t.tecnico],
+                        border: `1px solid ${tecnicoColors[t.tecnico]}44`,
+                      }}
+                    >
+                      {t.tecnico}
+                    </span>
+                  ) : t.tecnico
+                ) : '—'}
+              </td>
               <td className="px-3 py-2 text-sm text-gray-500">
                 {t.data_gestione ? new Date(t.data_gestione).toLocaleDateString('it-IT') : '—'}
               </td>
