@@ -964,9 +964,10 @@ function CaricoMassivoModal({ onClose, onImported }) {
 
 export default function MagazzinoPage() {
   const { can } = useAuth()
-  const canViewArticoli   = can('magazzino.articoli.view')
-  const canEditArticoli   = can('magazzino.articoli.edit')
-  const canDeleteArticoli = can('magazzino.articoli.delete')
+  const canViewArticoli    = can('magazzino.articoli.view')
+  const canEditArticoli    = can('magazzino.articoli.edit')
+  const canImportArticoli  = can('magazzino.articoli.import')
+  const canDeleteArticoli  = can('magazzino.articoli.delete')
   const isAdmin = canEditArticoli  // alias per compatibilità con i controlli esistenti (nuovo articolo, sposta in ritirati)
 
   const [activeTab, setActiveTab] = useState('giacenza') // 'giacenza' | 'ritirati' | 'log'
@@ -1168,15 +1169,17 @@ export default function MagazzinoPage() {
               </svg>
               Ubicazioni
             </button>
-            <button
-              onClick={() => setCaricoMassivo(true)}
-              className="flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white text-sm font-medium rounded-lg hover:bg-emerald-700"
-            >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
-              </svg>
-              Carico massivo
-            </button>
+            {canImportArticoli && (
+              <button
+                onClick={() => setCaricoMassivo(true)}
+                className="flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white text-sm font-medium rounded-lg hover:bg-emerald-700"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                </svg>
+                Carico massivo
+              </button>
+            )}
             <button
               onClick={() => setNewArticolo(true)}
               className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700"

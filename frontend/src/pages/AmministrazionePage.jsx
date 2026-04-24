@@ -48,10 +48,11 @@ const CATEGORIE = [
     icon: '🏭',
     permessi: [
       { code: 'magazzino.view',           label: 'Visualizzare il magazzino', desc: 'Accesso alla pagina magazzino, giacenze e movimenti' },
-      { code: 'magazzino.articoli.view',  label: 'Visualizzare articoli',     desc: 'Lettura schede articolo, dettagli e giacenze' },
-      { code: 'magazzino.articoli.edit',  label: 'Modificare articoli',       desc: 'Aggiunta e modifica di articoli a magazzino' },
-      { code: 'magazzino.articoli.delete',label: 'Eliminare articoli',        desc: 'Eliminazione definitiva di articoli dal magazzino' },
-      { code: 'magazzino.movimenti',      label: 'Registrare movimenti',      desc: 'Entrate, uscite e rettifiche di magazzino' },
+      { code: 'magazzino.articoli.view',   label: 'Visualizzare articoli',     desc: 'Lettura schede articolo, dettagli e giacenze' },
+      { code: 'magazzino.articoli.edit',   label: 'Modificare articoli',       desc: 'Aggiunta e modifica di articoli a magazzino' },
+      { code: 'magazzino.articoli.import', label: 'Carico massivo da Excel',   desc: 'Importazione in blocco di articoli tramite file .xlsx' },
+      { code: 'magazzino.articoli.delete', label: 'Eliminare articoli',        desc: 'Eliminazione definitiva di articoli dal magazzino' },
+      { code: 'magazzino.movimenti',       label: 'Registrare movimenti',      desc: 'Entrate, uscite e rettifiche di magazzino' },
     ],
   },
   {
