@@ -166,6 +166,8 @@ def update_user(
         target.cognome = body.cognome
     if body.telefono is not None:
         target.telefono = body.telefono
+    if 'colore' in body.model_fields_set:
+        target.colore = body.colore
     if is_proprietario:
         if body.ruolo is not None:
             if body.ruolo == RuoloEnum.proprietario and not is_self:
