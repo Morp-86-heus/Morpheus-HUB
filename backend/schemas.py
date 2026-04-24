@@ -100,6 +100,8 @@ class ParteSostituita(BaseModel):
     descrizione: str
     modello: Optional[str] = None
     seriale: Optional[str] = None
+    pn: Optional[str] = None
+    cespite: Optional[str] = None
     tipo: Optional[str] = None
     difetto: Optional[str] = None
     parte_ritirata: bool = False
@@ -109,6 +111,8 @@ class ParteSostituita(BaseModel):
     ricambio_descrizione: Optional[str] = None
     ricambio_modello: Optional[str] = None
     ricambio_seriale: Optional[str] = None
+    ricambio_pn: Optional[str] = None
+    ricambio_cespite: Optional[str] = None
     ricambio_articolo_id: Optional[int] = None
 
 

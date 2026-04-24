@@ -97,20 +97,30 @@ function ParteRow({ parte, index, onChange, onRemove, ticket }) {
             </div>
           </div>
           <div className="grid grid-cols-12 gap-2">
-            <div className="col-span-4">
+            <div className="col-span-6">
               <label className={lbl}>Descrizione *</label>
               <input type="text" className={inp} placeholder="es. Hard disk, scheda madre…"
                 value={parte.descrizione} onChange={e => onChange(index, 'descrizione', e.target.value)} />
             </div>
-            <div className="col-span-4">
+            <div className="col-span-6">
               <label className={lbl}>Modello</label>
               <input type="text" className={inp} placeholder="es. Seagate Barracuda 2TB"
                 value={parte.modello} onChange={e => onChange(index, 'modello', e.target.value)} />
             </div>
             <div className="col-span-4">
-              <label className={lbl}>Seriale / P/N / Cespite</label>
-              <input type="text" className={inp} placeholder="SN: XYZ789"
+              <label className={lbl}>Seriale</label>
+              <input type="text" className={inp} placeholder="es. XYZ789"
                 value={parte.seriale} onChange={e => onChange(index, 'seriale', e.target.value)} />
+            </div>
+            <div className="col-span-4">
+              <label className={lbl}>P/N</label>
+              <input type="text" className={inp} placeholder="es. 0A12345"
+                value={parte.pn} onChange={e => onChange(index, 'pn', e.target.value)} />
+            </div>
+            <div className="col-span-4">
+              <label className={lbl}>Cespite</label>
+              <input type="text" className={inp} placeholder="es. CES-001"
+                value={parte.cespite} onChange={e => onChange(index, 'cespite', e.target.value)} />
             </div>
           </div>
           <div className="grid grid-cols-12 gap-2 mt-2">
@@ -152,20 +162,20 @@ function ParteRow({ parte, index, onChange, onRemove, ticket }) {
           ) : null}
 
           <div className="grid grid-cols-12 gap-2">
-            <div className="col-span-4">
+            <div className="col-span-6">
               <label className={lbl}>Descrizione</label>
               <input type="text" className={inp} placeholder="es. Hard disk"
                 value={parte.ricambio_descrizione} onChange={e => onChange(index, 'ricambio_descrizione', e.target.value)} />
             </div>
-            <div className="col-span-4">
+            <div className="col-span-6">
               <label className={lbl}>Modello</label>
               <input type="text" className={inp} placeholder="es. WD Blue 1TB SN550"
                 value={parte.ricambio_modello} onChange={e => onChange(index, 'ricambio_modello', e.target.value)} />
             </div>
             <div className="col-span-4">
-              <label className={lbl}>Seriale / P/N / Cespite</label>
+              <label className={lbl}>Seriale</label>
               <div className="relative">
-                <input type="text" className={inp} placeholder="SN: ABC123"
+                <input type="text" className={inp} placeholder="es. ABC123"
                   value={parte.ricambio_seriale} onChange={e => onChange(index, 'ricambio_seriale', e.target.value)} />
                 {cercando && (
                   <span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-gray-400">…</span>
@@ -193,6 +203,16 @@ function ParteRow({ parte, index, onChange, onRemove, ticket }) {
                   ))}
                 </div>
               )}
+            </div>
+            <div className="col-span-4">
+              <label className={lbl}>P/N</label>
+              <input type="text" className={inp} placeholder="es. 0B12345"
+                value={parte.ricambio_pn} onChange={e => onChange(index, 'ricambio_pn', e.target.value)} />
+            </div>
+            <div className="col-span-4">
+              <label className={lbl}>Cespite</label>
+              <input type="text" className={inp} placeholder="es. CES-002"
+                value={parte.ricambio_cespite} onChange={e => onChange(index, 'ricambio_cespite', e.target.value)} />
             </div>
           </div>
         </div>
@@ -926,10 +946,10 @@ export default function CloseTicketModal({ ticket, onClose, onClosed }) {
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }))
 
   const addParte = () => setParti(p => [...p, {
-    descrizione: '', modello: '', seriale: '', tipo: '', difetto: '',
+    descrizione: '', modello: '', seriale: '', pn: '', cespite: '', tipo: '', difetto: '',
     parte_ritirata: false,
     parte_da_riparare: false,
-    ricambio_descrizione: '', ricambio_modello: '', ricambio_seriale: '',
+    ricambio_descrizione: '', ricambio_modello: '', ricambio_seriale: '', ricambio_pn: '', ricambio_cespite: '',
     ricambio_articolo_id: null,
   }])
 
