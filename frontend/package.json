@@ -15,7 +15,15 @@
     "recharts": "^2.12.7",
     "date-fns": "^3.6.0",
     "lucide-react": "^0.460.0",
-    "jspdf": "^2.5.2"
+    "jspdf": "^2.5.2",
+    "@tiptap/react": "^2.0.0",
+    "@tiptap/pm": "^2.0.0",
+    "@tiptap/starter-kit": "^2.0.0",
+    "@tiptap/extension-color": "^2.0.0",
+    "@tiptap/extension-text-style": "^2.0.0",
+    "@tiptap/extension-highlight": "^2.0.0",
+    "@tiptap/extension-underline": "^2.0.0",
+    "@tiptap/extension-text-align": "^2.0.0"
   },
   "devDependencies": {
     "@vitejs/plugin-react": "^4.3.2",

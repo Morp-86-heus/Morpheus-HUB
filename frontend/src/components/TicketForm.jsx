@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { ticketsApi, lookupApi } from '../api/client'
 import axios from 'axios'
+import RichTextEditor from './RichTextEditor'
 
 const STATI = ['In gestione', 'Attesa parti', 'Sospesa', 'Chiusa', 'Annullata']
 
@@ -34,6 +35,7 @@ export default function TicketForm({ initialData }) {
     data_gestione: initialData?.data_gestione || '',
     tecnico: '',
     nr_progressivo: '',
+    dispositivo: '',
     ...initialData,
   })
   const [commitenti, setCommitenti] = useState([])
@@ -179,6 +181,11 @@ export default function TicketForm({ initialData }) {
         </div>
 
         <div>
+          <label className={labelCls}>Dispositivo</label>
+          <input type="text" className={inputCls} value={form.dispositivo} onChange={e => set('dispositivo', e.target.value)} placeholder="es. Stampante HP LaserJet 400" />
+        </div>
+
+        <div>
           <label className={labelCls}>Tecnico</label>
           <select className={inputCls} value={form.tecnico} onChange={e => set('tecnico', e.target.value)}>
             <option value="">— Seleziona tecnico —</option>
@@ -226,7 +233,11 @@ export default function TicketForm({ initialData }) {
 
       <div>
         <label className={labelCls}>Note</label>
-        <textarea rows={3} className={inputCls} value={form.note} onChange={e => set('note', e.target.value)} />
+        <RichTextEditor
+          key={`note-${initialData?.id ?? 'new'}`}
+          value={form.note}
+          onChange={v => set('note', v)}
+        />
       </div>
 
       <div className="flex gap-3 pt-2">

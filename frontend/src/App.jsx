@@ -178,7 +178,7 @@ function AppRoutes() {
         )}
         {/* Mobile top padding for hamburger button */}
         <div className="md:hidden h-14" />
-        <div className="max-w-screen-xl mx-auto px-4 md:px-6 py-6">
+        <div className="px-4 md:px-6 py-6">
           <Routes>
             <Route path="/" element={<HomePage />} />
             <Route path="/tickets" element={<ProtectedRoute><TicketsPage /></ProtectedRoute>} />

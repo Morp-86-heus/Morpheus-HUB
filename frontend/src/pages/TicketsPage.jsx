@@ -16,8 +16,8 @@ function filtersFromUrl(searchParams) {
   return {
     page: 1,
     page_size: 50,
-    order_by: 'id',
-    order_dir: 'desc',
+    order_by: 'data_gestione',
+    order_dir: 'asc',
     stato: stato.length > 0 ? stato : [...STATI_APERTI],
     sla_scaduta: sla_scaduta || undefined,
     tecnico,

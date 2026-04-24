@@ -47,6 +47,7 @@ export default function TicketTable({ tickets, onSelect, onSort, orderBy, orderD
             {th('Tecnico', 'tecnico')}
             {th('Data gest.', 'data_gestione')}
             {th('Progr.', 'nr_progressivo')}
+            {th('Note', 'note')}
           </tr>
         </thead>
         <tbody className="bg-white divide-y divide-gray-100">
@@ -76,6 +77,9 @@ export default function TicketTable({ tickets, onSelect, onSort, orderBy, orderD
               </td>
               <td className="px-3 py-2 text-center text-sm text-gray-500">
                 {t.nr_progressivo ?? '—'}
+              </td>
+              <td className="px-3 py-2 text-sm text-gray-500 max-w-[200px] truncate" title={t.note || ''}>
+                {t.note || '—'}
               </td>
             </tr>
           ))}

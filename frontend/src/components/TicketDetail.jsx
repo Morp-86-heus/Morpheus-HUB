@@ -184,13 +184,20 @@ export default function TicketDetail({ ticket, onClose, onDeleted, onRefresh }) 
             <Field label="Data gestione" value={ticket.data_gestione ? new Date(ticket.data_gestione).toLocaleDateString('it-IT') : null} />
             <Field label="Utente" value={ticket.utente} />
             <Field label="Città" value={ticket.citta} />
+            <Field label="Dispositivo" value={ticket.dispositivo} />
             <Field label="N° progressivo" value={ticket.nr_progressivo ?? null} />
             <div className="col-span-2">
               <Field label="LDV" value={ticket.ldv} />
             </div>
-            <div className="col-span-2">
-              <Field label="Note" value={ticket.note} />
-            </div>
+            {ticket.note && (
+              <div className="col-span-2">
+                <dt className="text-xs text-gray-400 uppercase tracking-wide">Note</dt>
+                <dd
+                  className="mt-0.5 text-sm text-gray-800 rich-note"
+                  dangerouslySetInnerHTML={{ __html: ticket.note }}
+                />
+              </div>
+            )}
 
             {/* Dati chiusura se presenti */}
             <ChiusuraSection chiusura={ticket.chiusura} ticketId={ticket.id} />
