@@ -1,6 +1,7 @@
 from datetime import datetime
+from io import BytesIO
 from typing import List, Optional
-from fastapi import APIRouter, Depends, HTTPException, Response
+from fastapi import APIRouter, Depends, HTTPException, Response, UploadFile, File
 from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import or_
 from database import get_db
@@ -8,6 +9,8 @@ from models import Articolo, MovimentoMagazzino, Organizzazione, SottoMagazzino,
 from auth import require_roles, get_active_org_id
 from utils.plan import check_feature
 import schemas
+import openpyxl
+from openpyxl.styles import Font, PatternFill, Alignment
 
 router = APIRouter(prefix="/api/magazzino", tags=["magazzino"])
 
@@ -80,6 +83,209 @@ def create_articolo(
     db.commit()
     db.refresh(obj)
     return db.query(Articolo).options(joinedload(Articolo.movimenti), joinedload(Articolo.sotto_magazzino)).filter_by(id=obj.id).first()
+
+
+@router.get("/articoli/template")
+def download_template(
+    _: User = Depends(_admin),
+):
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = "Articoli"
+
+    headers = [
+        ("Commitente*", True),
+        ("Cliente*", True),
+        ("Categoria", False),
+        ("Marca", False),
+        ("Modello", False),
+        ("Seriale", False),
+        ("Cespite", False),
+        ("Descrizione*", True),
+        ("Unita_Misura", False),
+        ("Quantita_Iniziale", False),
+        ("Quantita_Minima", False),
+        ("Fornitore", False),
+        ("Note", False),
+    ]
+
+    for col, (name, required) in enumerate(headers, 1):
+        cell = ws.cell(row=1, column=col, value=name)
+        cell.font = Font(bold=True, color="FFFFFF", size=11)
+        cell.fill = PatternFill("solid", fgColor="1D4ED8" if required else "6B7280")
+        cell.alignment = Alignment(horizontal="center", vertical="center")
+
+    example = ["BPP", "SOGEI", "Stampanti", "HP", "LaserJet 400",
+               "SN123456", "", "Toner HP LaserJet 400", "pz", 5, 2, "HP Italia", ""]
+    ws.append(example)
+    for col in range(1, len(headers) + 1):
+        ws.cell(row=2, column=col).font = Font(color="6B7280", italic=True)
+
+    col_widths = [16, 16, 14, 12, 16, 16, 14, 32, 13, 17, 15, 16, 22]
+    for i, w in enumerate(col_widths, 1):
+        ws.column_dimensions[ws.cell(row=1, column=i).column_letter].width = w
+    ws.row_dimensions[1].height = 22
+    ws.freeze_panes = "A2"
+
+    buf = BytesIO()
+    wb.save(buf)
+    buf.seek(0)
+    return Response(
+        content=buf.read(),
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": "attachment; filename=template_carico_massivo.xlsx"},
+    )
+
+
+IMPORT_HEADER_MAP = {
+    "commitente*": "commitente", "commitente": "commitente",
+    "cliente*": "cliente", "cliente": "cliente",
+    "categoria": "categoria",
+    "marca": "marca",
+    "modello": "modello",
+    "seriale": "seriale",
+    "cespite": "cespite",
+    "descrizione*": "descrizione", "descrizione": "descrizione",
+    "unita_misura": "unita_misura",
+    "quantita_iniziale": "quantita_disponibile",
+    "quantita_minima": "quantita_minima",
+    "fornitore": "fornitore",
+    "note": "note",
+}
+
+
+def _parse_import_file(content: bytes, org_id: int, db: Session):
+    try:
+        wb = openpyxl.load_workbook(BytesIO(content), read_only=True, data_only=True)
+    except Exception:
+        raise HTTPException(400, "File non valido. Carica un file .xlsx")
+    ws = wb.active
+    rows = list(ws.iter_rows(values_only=True))
+    if len(rows) < 2:
+        raise HTTPException(400, "Il file non contiene dati (manca la riga intestazione o le righe dati)")
+
+    raw_headers = [str(h).strip().lower() if h is not None else "" for h in rows[0]]
+    field_names = [IMPORT_HEADER_MAP.get(h) for h in raw_headers]
+
+    # Precarica seriali e cespiti esistenti per controllo rapido
+    existing_seriali = {
+        r[0] for r in db.query(Articolo.seriale)
+        .filter(Articolo.organizzazione_id == org_id, Articolo.seriale.isnot(None)).all()
+    }
+    existing_cespiti = {
+        r[0] for r in db.query(Articolo.cespite)
+        .filter(Articolo.organizzazione_id == org_id, Articolo.cespite.isnot(None)).all()
+    }
+
+    # Traccia duplicati all'interno dello stesso file
+    file_seriali: set = set()
+    file_cespiti: set = set()
+
+    preview = []
+    for row_idx, row in enumerate(rows[1:], start=2):
+        if all(v is None or str(v).strip() == "" for v in row):
+            continue  # salta righe vuote
+
+        data: dict = {}
+        for fi, field in enumerate(field_names):
+            if field and fi < len(row) and row[fi] is not None:
+                val = row[fi]
+                data[field] = str(val).strip() if not isinstance(val, (int, float)) else val
+
+        def _int(k):
+            try:
+                return int(data.get(k) or 0)
+            except (ValueError, TypeError):
+                return 0
+
+        errore = None
+        if not data.get("commitente"):
+            errore = "Commitente obbligatorio"
+        elif not data.get("cliente"):
+            errore = "Cliente obbligatorio"
+        elif not data.get("descrizione"):
+            errore = "Descrizione obbligatoria"
+        elif data.get("seriale") and data["seriale"] in existing_seriali:
+            errore = f"Seriale '{data['seriale']}' già presente in magazzino"
+        elif data.get("seriale") and data["seriale"] in file_seriali:
+            errore = f"Seriale '{data['seriale']}' duplicato nel file"
+        elif data.get("cespite") and data["cespite"] in existing_cespiti:
+            errore = f"Cespite '{data['cespite']}' già presente in magazzino"
+        elif data.get("cespite") and data["cespite"] in file_cespiti:
+            errore = f"Cespite '{data['cespite']}' duplicato nel file"
+
+        if errore is None:
+            if data.get("seriale"):
+                file_seriali.add(data["seriale"])
+            if data.get("cespite"):
+                file_cespiti.add(data["cespite"])
+
+        preview.append({
+            "riga": row_idx,
+            "valido": errore is None,
+            "errore": errore,
+            "commitente": data.get("commitente", ""),
+            "cliente": data.get("cliente", ""),
+            "categoria": data.get("categoria", ""),
+            "marca": data.get("marca", ""),
+            "modello": data.get("modello", ""),
+            "seriale": data.get("seriale", ""),
+            "cespite": data.get("cespite", ""),
+            "descrizione": data.get("descrizione", ""),
+            "unita_misura": data.get("unita_misura") or "pz",
+            "quantita_disponibile": _int("quantita_disponibile"),
+            "quantita_minima": _int("quantita_minima"),
+            "fornitore": data.get("fornitore", ""),
+            "note": data.get("note", ""),
+        })
+
+    return preview
+
+
+@router.post("/articoli/import")
+async def import_articoli(
+    file: UploadFile = File(...),
+    dry_run: bool = False,
+    db: Session = Depends(get_db),
+    _: User = Depends(_admin),
+    org_id: int = Depends(get_active_org_id),
+):
+    org = db.query(Organizzazione).filter_by(id=org_id).first()
+    check_feature(org, "magazzino")
+    content = await file.read()
+    preview = _parse_import_file(content, org_id, db)
+
+    validi = sum(1 for r in preview if r["valido"])
+    invalidi = len(preview) - validi
+
+    if dry_run:
+        return {"righe": preview, "validi": validi, "invalidi": invalidi}
+
+    importati = 0
+    saltati = []
+    for r in preview:
+        if not r["valido"]:
+            saltati.append({"riga": r["riga"], "motivo": r["errore"]})
+            continue
+        db.add(Articolo(
+            commitente=r["commitente"],
+            cliente=r["cliente"],
+            categoria=r["categoria"] or None,
+            marca=r["marca"] or None,
+            modello=r["modello"] or None,
+            seriale=r["seriale"] or None,
+            cespite=r["cespite"] or None,
+            descrizione=r["descrizione"],
+            unita_misura=r["unita_misura"],
+            quantita_disponibile=r["quantita_disponibile"],
+            quantita_minima=r["quantita_minima"],
+            fornitore=r["fornitore"] or None,
+            note=r["note"] or None,
+            organizzazione_id=org_id,
+        ))
+        importati += 1
+    db.commit()
+    return {"importati": importati, "saltati": saltati}
 
 
 @router.put("/articoli/{aid}", response_model=schemas.ArticoloOut)

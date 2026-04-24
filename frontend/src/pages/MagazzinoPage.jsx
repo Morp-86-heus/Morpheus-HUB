@@ -737,6 +737,231 @@ function SottoMagazziniManagerModal({ commitente, sottoMagazzini: initialList, o
   )
 }
 
+function CaricoMassivoModal({ onClose, onImported }) {
+  const [step, setStep] = useState(1) // 1=upload 2=preview 3=risultato
+  const [file, setFile] = useState(null)
+  const [dragging, setDragging] = useState(false)
+  const [loading, setLoading] = useState(false)
+  const [preview, setPreview] = useState(null) // { righe, validi, invalidi }
+  const [risultato, setRisultato] = useState(null) // { importati, saltati }
+  const [error, setError] = useState(null)
+
+  const handleFile = (f) => {
+    if (!f) return
+    if (!f.name.endsWith('.xlsx')) { setError('Carica un file .xlsx'); return }
+    setFile(f)
+    setError(null)
+  }
+
+  const handleDrop = (e) => {
+    e.preventDefault(); setDragging(false)
+    handleFile(e.dataTransfer.files[0])
+  }
+
+  const doPreview = async () => {
+    if (!file) return
+    setLoading(true); setError(null)
+    try {
+      const res = await magazzinoApi.importPreview(file)
+      setPreview(res.data)
+      setStep(2)
+    } catch (err) {
+      setError(err.response?.data?.detail || 'Errore nella lettura del file')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const doImport = async () => {
+    setLoading(true); setError(null)
+    try {
+      const res = await magazzinoApi.importConfirm(file)
+      setRisultato(res.data)
+      setStep(3)
+      onImported && onImported()
+    } catch (err) {
+      setError(err.response?.data?.detail || 'Errore durante l\'importazione')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const downloadTemplate = async () => {
+    const res = await magazzinoApi.downloadTemplate()
+    const url = URL.createObjectURL(new Blob([res.data]))
+    const a = document.createElement('a'); a.href = url; a.download = 'template_carico_massivo.xlsx'; a.click()
+    URL.revokeObjectURL(url)
+  }
+
+  const COLS = ['Riga', 'Commitente', 'Cliente', 'Categoria', 'Marca', 'Modello', 'Seriale', 'Cespite', 'Descrizione', 'U.M.', 'Qtà', 'Qtà min.', 'Fornitore']
+  const ROW_KEYS = ['riga', 'commitente', 'cliente', 'categoria', 'marca', 'modello', 'seriale', 'cespite', 'descrizione', 'unita_misura', 'quantita_disponibile', 'quantita_minima', 'fornitore']
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+      <div className="bg-white rounded-2xl shadow-2xl w-full flex flex-col" style={{ maxWidth: step === 2 ? '90vw' : '520px', maxHeight: '90vh' }}>
+        {/* Header */}
+        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 shrink-0">
+          <div className="flex items-center gap-3">
+            <h2 className="text-base font-semibold text-gray-800">Carico massivo</h2>
+            <div className="flex items-center gap-1">
+              {[1, 2, 3].map(s => (
+                <div key={s} className={`flex items-center gap-1`}>
+                  <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${step === s ? 'bg-blue-600 text-white' : step > s ? 'bg-green-500 text-white' : 'bg-gray-100 text-gray-400'}`}>
+                    {step > s ? '✓' : s}
+                  </div>
+                  {s < 3 && <div className={`w-6 h-0.5 ${step > s ? 'bg-green-500' : 'bg-gray-200'}`} />}
+                </div>
+              ))}
+            </div>
+          </div>
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+          </button>
+        </div>
+
+        {/* Body */}
+        <div className="flex-1 overflow-y-auto px-6 py-5">
+          {/* Step 1: Upload */}
+          {step === 1 && (
+            <div className="space-y-5">
+              <div className="flex items-center justify-between">
+                <p className="text-sm text-gray-600">Carica un file <span className="font-mono font-semibold">.xlsx</span> con gli articoli da importare.</p>
+                <button onClick={downloadTemplate} className="flex items-center gap-1.5 text-xs text-blue-600 hover:text-blue-800 font-medium border border-blue-200 rounded-lg px-3 py-1.5 hover:bg-blue-50 transition-colors">
+                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+                  Scarica template
+                </button>
+              </div>
+
+              <div
+                onDragOver={e => { e.preventDefault(); setDragging(true) }}
+                onDragLeave={() => setDragging(false)}
+                onDrop={handleDrop}
+                onClick={() => document.getElementById('import-file-input').click()}
+                className={`border-2 border-dashed rounded-xl p-10 text-center cursor-pointer transition-colors ${dragging ? 'border-blue-400 bg-blue-50' : file ? 'border-green-400 bg-green-50' : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'}`}
+              >
+                <input id="import-file-input" type="file" accept=".xlsx" className="hidden" onChange={e => handleFile(e.target.files[0])} />
+                {file ? (
+                  <div className="space-y-1">
+                    <svg className="w-10 h-10 mx-auto text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                    <p className="text-sm font-semibold text-green-700">{file.name}</p>
+                    <p className="text-xs text-green-500">{(file.size / 1024).toFixed(1)} KB — clicca per cambiare</p>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    <svg className="w-10 h-10 mx-auto text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" /></svg>
+                    <p className="text-sm text-gray-500">Trascina qui il file o <span className="text-blue-600 font-medium">sfoglia</span></p>
+                    <p className="text-xs text-gray-400">Solo file .xlsx</p>
+                  </div>
+                )}
+              </div>
+
+              {error && <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">{error}</p>}
+            </div>
+          )}
+
+          {/* Step 2: Preview */}
+          {step === 2 && preview && (
+            <div className="space-y-4">
+              <div className="flex items-center gap-4">
+                <div className="flex items-center gap-2 px-3 py-1.5 bg-green-50 border border-green-200 rounded-lg">
+                  <span className="text-lg font-bold text-green-700">{preview.validi}</span>
+                  <span className="text-xs text-green-600">validi</span>
+                </div>
+                {preview.invalidi > 0 && (
+                  <div className="flex items-center gap-2 px-3 py-1.5 bg-red-50 border border-red-200 rounded-lg">
+                    <span className="text-lg font-bold text-red-700">{preview.invalidi}</span>
+                    <span className="text-xs text-red-600">con errori (verranno saltati)</span>
+                  </div>
+                )}
+              </div>
+
+              <div className="overflow-x-auto rounded-lg border border-gray-200">
+                <table className="min-w-full text-xs">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="px-2 py-2 text-left font-semibold text-gray-500 w-8">#</th>
+                      {COLS.slice(1).map(c => <th key={c} className="px-2 py-2 text-left font-semibold text-gray-500 whitespace-nowrap">{c}</th>)}
+                      <th className="px-2 py-2 text-left font-semibold text-gray-500">Stato</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-100">
+                    {preview.righe.map(r => (
+                      <tr key={r.riga} className={r.valido ? '' : 'bg-red-50'}>
+                        {ROW_KEYS.map(k => (
+                          <td key={k} className={`px-2 py-1.5 ${k === 'riga' ? 'text-gray-400 w-8' : 'text-gray-700'} max-w-[120px] truncate`} title={String(r[k] ?? '')}>
+                            {r[k] ?? ''}
+                          </td>
+                        ))}
+                        <td className="px-2 py-1.5 whitespace-nowrap">
+                          {r.valido
+                            ? <span className="text-green-600 font-medium">✓</span>
+                            : <span className="text-red-600 text-xs">{r.errore}</span>
+                          }
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              {error && <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">{error}</p>}
+            </div>
+          )}
+
+          {/* Step 3: Risultato */}
+          {step === 3 && risultato && (
+            <div className="space-y-4">
+              <div className="flex items-center gap-3 p-4 bg-green-50 border border-green-200 rounded-xl">
+                <svg className="w-8 h-8 text-green-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                <div>
+                  <p className="font-semibold text-green-800">Importazione completata</p>
+                  <p className="text-sm text-green-700">{risultato.importati} articol{risultato.importati === 1 ? 'o importato' : 'i importati'} con successo</p>
+                </div>
+              </div>
+
+              {risultato.saltati.length > 0 && (
+                <div>
+                  <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">{risultato.saltati.length} righe saltate</p>
+                  <div className="space-y-1 max-h-48 overflow-y-auto">
+                    {risultato.saltati.map(s => (
+                      <div key={s.riga} className="flex gap-2 text-xs px-3 py-1.5 bg-red-50 border border-red-100 rounded-lg">
+                        <span className="text-red-400 font-mono shrink-0">Riga {s.riga}</span>
+                        <span className="text-red-700">{s.motivo}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* Footer */}
+        <div className="flex items-center justify-between px-6 py-4 border-t border-gray-100 bg-gray-50/60 rounded-b-2xl shrink-0">
+          {step === 1 && (
+            <>
+              <button onClick={onClose} className="px-4 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg">Annulla</button>
+              <button onClick={doPreview} disabled={!file || loading} className="px-5 py-2 text-sm font-medium bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50">
+                {loading ? 'Analisi in corso…' : 'Analizza file →'}
+              </button>
+            </>
+          )}
+          {step === 2 && (
+            <>
+              <button onClick={() => { setStep(1); setPreview(null); setError(null) }} className="px-4 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg">← Indietro</button>
+              <button onClick={doImport} disabled={loading || preview.validi === 0} className="px-5 py-2 text-sm font-medium bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50">
+                {loading ? 'Importazione…' : `Importa ${preview.validi} articol${preview.validi === 1 ? 'o' : 'i'}`}
+              </button>
+            </>
+          )}
+          {step === 3 && (
+            <button onClick={onClose} className="ml-auto px-5 py-2 text-sm font-medium bg-blue-600 text-white rounded-lg hover:bg-blue-700">Chiudi</button>
+          )}
+        </div>
+      </div>
+    </div>
+  )
+}
+
 export default function MagazzinoPage() {
   const { can } = useAuth()
   const canViewArticoli   = can('magazzino.articoli.view')
@@ -765,6 +990,7 @@ export default function MagazzinoPage() {
   const [logCommitente, setLogCommitente] = useState('')
 
   const [newArticolo, setNewArticolo] = useState(false)
+  const [caricoMassivo, setCaricoMassivo] = useState(false)
   const [editArticolo, setEditArticolo] = useState(null)
   const [deleteArticolo, setDeleteArticolo] = useState(null)
   const [movimentoArticolo, setMovimentoArticolo] = useState(null)
@@ -941,6 +1167,15 @@ export default function MagazzinoPage() {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
               </svg>
               Ubicazioni
+            </button>
+            <button
+              onClick={() => setCaricoMassivo(true)}
+              className="flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white text-sm font-medium rounded-lg hover:bg-emerald-700"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+              </svg>
+              Carico massivo
             </button>
             <button
               onClick={() => setNewArticolo(true)}
@@ -1647,6 +1882,14 @@ export default function MagazzinoPage() {
             </div>
           ))}
         </div>
+      )}
+
+      {/* Modal: Carico massivo */}
+      {caricoMassivo && (
+        <CaricoMassivoModal
+          onClose={() => setCaricoMassivo(false)}
+          onImported={() => load()}
+        />
       )}
 
       {/* Modal: Nuovo articolo */}

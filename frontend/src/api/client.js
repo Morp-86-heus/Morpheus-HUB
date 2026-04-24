@@ -104,6 +104,15 @@ export const magazzinoApi = {
   createSottoMagazzino: (data) => api.post('/magazzino/sotto-magazzini', data),
   updateSottoMagazzino: (id, data) => api.put(`/magazzino/sotto-magazzini/${id}`, data),
   deleteSottoMagazzino: (id) => api.delete(`/magazzino/sotto-magazzini/${id}`),
+  downloadTemplate: () => api.get('/magazzino/articoli/template', { responseType: 'blob' }),
+  importPreview: (file) => {
+    const fd = new FormData(); fd.append('file', file)
+    return api.post('/magazzino/articoli/import?dry_run=true', fd)
+  },
+  importConfirm: (file) => {
+    const fd = new FormData(); fd.append('file', file)
+    return api.post('/magazzino/articoli/import', fd)
+  },
 }
 
 export const organizzazioniApi = {
