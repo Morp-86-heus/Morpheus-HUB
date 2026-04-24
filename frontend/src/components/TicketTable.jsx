@@ -268,6 +268,11 @@ export default function TicketTable({
                       {t.tecnico}
                     </span>
                   ) : t.tecnico
+                ) : t.tecnico_esterno ? (
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-semibold bg-purple-50 text-purple-700 border border-purple-200">
+                    <span className="opacity-60 font-normal">est.</span>
+                    {t.tecnico_esterno}
+                  </span>
                 ) : '—'}
               </td>
               <td className="px-3 py-2 text-sm text-gray-500">

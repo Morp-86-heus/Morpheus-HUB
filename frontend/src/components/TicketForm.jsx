@@ -38,8 +38,10 @@ export default function TicketForm({ initialData }) {
     dispositivo: '',
     orari_apertura: initialData?.orari_apertura || [],
     giorni_chiusura: initialData?.giorni_chiusura || [],
+    tecnico_esterno: initialData?.tecnico_esterno || '',
     ...initialData,
   })
+  const [tecnicoEsterno, setTecnicoEsterno] = useState(!!(initialData?.tecnico_esterno))
   const [newOrario, setNewOrario] = useState('')
   const [addingOrario, setAddingOrario] = useState(false)
   const [newGiorno, setNewGiorno] = useState('')
@@ -217,11 +219,38 @@ export default function TicketForm({ initialData }) {
         </div>
 
         <div>
-          <label className={labelCls}>Tecnico</label>
-          <select className={inputCls} value={form.tecnico} onChange={e => set('tecnico', e.target.value)}>
-            <option value="">— Seleziona tecnico —</option>
-            {tecnici.map(t => <option key={t.id} value={t.nome}>{t.nome}</option>)}
-          </select>
+          <div className="flex items-center justify-between mb-1">
+            <label className={labelCls.replace('mb-1', '')}>Tecnico</label>
+            <button
+              type="button"
+              onClick={() => {
+                const next = !tecnicoEsterno
+                setTecnicoEsterno(next)
+                if (next) { set('tecnico', '') } else { set('tecnico_esterno', '') }
+              }}
+              className={`text-xs font-medium px-2 py-0.5 rounded-full border transition-colors ${
+                tecnicoEsterno
+                  ? 'bg-purple-100 text-purple-700 border-purple-300'
+                  : 'bg-gray-100 text-gray-500 border-gray-200 hover:border-gray-300'
+              }`}
+            >
+              {tecnicoEsterno ? '✕ Tecnico esterno' : '+ Tecnico esterno'}
+            </button>
+          </div>
+          {tecnicoEsterno ? (
+            <input
+              type="text"
+              className={`${inputCls} border-purple-300 focus:ring-purple-400`}
+              value={form.tecnico_esterno}
+              onChange={e => set('tecnico_esterno', e.target.value)}
+              placeholder="Nome tecnico esterno..."
+            />
+          ) : (
+            <select className={inputCls} value={form.tecnico} onChange={e => set('tecnico', e.target.value)}>
+              <option value="">— Seleziona tecnico —</option>
+              {tecnici.map(t => <option key={t.id} value={t.nome}>{t.nome}</option>)}
+            </select>
+          )}
         </div>
 
         <div>

@@ -272,6 +272,7 @@ class Ticket(Base):
     note = Column(Text, nullable=True)
     data_gestione = Column(Date, nullable=True)
     tecnico = Column(String(100), nullable=True)
+    tecnico_esterno = Column(String(200), nullable=True)
     nr_progressivo = Column(Integer, nullable=True)
     dispositivo = Column(String(200), nullable=True)
     note_intervento = Column(Text, nullable=True)

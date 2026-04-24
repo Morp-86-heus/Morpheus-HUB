@@ -331,7 +331,10 @@ export default function TicketDetail({ ticket, onClose, onDeleted, onRefresh }) 
             <Field label="SLA" value={<SLABadge sla={ticket.sla_scadenza} stato={ticket.stato} />} />
             <Field label="Commitente" value={ticket.commitente} />
             <Field label="Cliente" value={ticket.cliente} />
-            <Field label="Tecnico" value={ticket.tecnico} />
+            <Field
+              label="Tecnico"
+              value={ticket.tecnico || (ticket.tecnico_esterno ? `${ticket.tecnico_esterno} (est.)` : null)}
+            />
             <Field label="Data gestione" value={ticket.data_gestione ? new Date(ticket.data_gestione).toLocaleDateString('it-IT') : null} />
             <Field label="Utente" value={ticket.utente} />
             <Field label="Città" value={ticket.citta} />

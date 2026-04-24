@@ -177,6 +177,7 @@ class TicketBase(BaseModel):
     note: Optional[str] = None
     data_gestione: Optional[date] = None
     tecnico: Optional[str] = None
+    tecnico_esterno: Optional[str] = None
     nr_progressivo: Optional[int] = None
     dispositivo: Optional[str] = None
     note_intervento: Optional[str] = None
