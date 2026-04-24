@@ -275,6 +275,8 @@ class Ticket(Base):
     nr_progressivo = Column(Integer, nullable=True)
     dispositivo = Column(String(200), nullable=True)
     note_intervento = Column(Text, nullable=True)
+    orari_apertura = Column(JSON, nullable=True)
+    giorni_chiusura = Column(JSON, nullable=True)
     parent_ticket_id = Column(Integer, ForeignKey("tickets.id"), nullable=True)
     numero_intervento = Column(Integer, nullable=False, server_default="1")
     organizzazione_id = Column(Integer, ForeignKey("organizzazioni.id"), nullable=True, index=True)

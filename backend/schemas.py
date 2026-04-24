@@ -180,6 +180,8 @@ class TicketBase(BaseModel):
     nr_progressivo: Optional[int] = None
     dispositivo: Optional[str] = None
     note_intervento: Optional[str] = None
+    orari_apertura: Optional[List[str]] = None
+    giorni_chiusura: Optional[List[str]] = None
     parent_ticket_id: Optional[int] = None
     numero_intervento: Optional[int] = 1
 
