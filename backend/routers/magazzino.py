@@ -5,7 +5,7 @@ from fastapi import APIRouter, Depends, HTTPException, Response, UploadFile, Fil
 from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import or_
 from database import get_db
-from models import Articolo, MovimentoMagazzino, Organizzazione, SottoMagazzino, User, RuoloEnum
+from models import Articolo, MovimentoMagazzino, Organizzazione, SottoMagazzino, User, RuoloEnum, TicketChiusura, Ticket
 from auth import require_roles, get_active_org_id
 from utils.plan import check_feature
 import schemas
@@ -466,6 +466,116 @@ def list_movimenti(
             creato_da_nome=utente.nome_completo if utente else None,
         ))
     return {"total": total, "page": page, "page_size": page_size, "items": items}
+
+
+@router.get("/cerca-parte")
+def cerca_parte(
+    q: str,
+    db: Session = Depends(get_db),
+    _: User = Depends(_tutti),
+    org_id: int = Depends(get_active_org_id),
+):
+    import json as _json
+
+    q = q.strip()
+    if len(q) < 2:
+        return {"articoli": [], "parti_ticket": []}
+
+    pattern = f"%{q}%"
+    q_lower = q.lower()
+
+    # ── 1. Articoli in giacenza e ritirati ───────────────────────────────────
+    articoli_rows = db.query(Articolo).filter(
+        Articolo.organizzazione_id == org_id,
+        or_(
+            Articolo.seriale.ilike(pattern),
+            Articolo.cespite.ilike(pattern),
+            Articolo.marca.ilike(pattern),
+            Articolo.modello.ilike(pattern),
+            Articolo.descrizione.ilike(pattern),
+            Articolo.fornitore.ilike(pattern),
+        )
+    ).limit(30).all()
+
+    articoli_out = [
+        {
+            "id": a.id,
+            "descrizione": a.descrizione,
+            "marca": a.marca,
+            "modello": a.modello,
+            "seriale": a.seriale,
+            "cespite": a.cespite,
+            "categoria": a.categoria,
+            "quantita_disponibile": a.quantita_disponibile,
+            "commitente": a.commitente,
+            "cliente": a.cliente,
+            "ritirato": (a.categoria or "").lower() == "gestione guasti",
+        }
+        for a in articoli_rows
+    ]
+
+    # ── 2. Parti nelle chiusure ticket ───────────────────────────────────────
+    chiusure = (
+        db.query(TicketChiusura)
+        .join(Ticket, TicketChiusura.ticket_id == Ticket.id)
+        .filter(
+            Ticket.organizzazione_id == org_id,
+            TicketChiusura.parti_json.ilike(pattern),
+        )
+        .limit(60)
+        .all()
+    )
+
+    parti_ticket = []
+    seen = set()
+    for ch in chiusure:
+        try:
+            parti = _json.loads(ch.parti_json or "[]")
+        except Exception:
+            continue
+        for p in parti:
+            campi = [
+                p.get("descrizione", ""), p.get("seriale", ""), p.get("pn", ""),
+                p.get("modello", ""), p.get("cespite", ""),
+                p.get("ricambio_descrizione", ""), p.get("ricambio_seriale", ""),
+                p.get("ricambio_pn", ""), p.get("ricambio_modello", ""),
+                p.get("ricambio_cespite", ""),
+            ]
+            if not any(q_lower in str(f).lower() for f in campi if f):
+                continue
+            key = (ch.ticket_id, p.get("seriale"), p.get("ricambio_seriale"), p.get("descrizione"))
+            if key in seen:
+                continue
+            seen.add(key)
+            ricambio = None
+            if any(p.get(k) for k in ("ricambio_descrizione", "ricambio_seriale", "ricambio_pn", "ricambio_modello")):
+                ricambio = {
+                    "descrizione": p.get("ricambio_descrizione"),
+                    "seriale": p.get("ricambio_seriale"),
+                    "pn": p.get("ricambio_pn"),
+                    "modello": p.get("ricambio_modello"),
+                }
+            parti_ticket.append({
+                "ticket_id": ch.ticket_id,
+                "tecnico": ch.tecnico_nome,
+                "data_chiusura": ch.data_fine.isoformat() if ch.data_fine else (
+                    ch.data_inizio.isoformat() if ch.data_inizio else None
+                ),
+                "parte_guasta": {
+                    "descrizione": p.get("descrizione"),
+                    "seriale": p.get("seriale"),
+                    "pn": p.get("pn"),
+                    "modello": p.get("modello"),
+                    "tipo": p.get("tipo"),
+                },
+                "ricambio": ricambio,
+            })
+            if len(parti_ticket) >= 20:
+                break
+        if len(parti_ticket) >= 20:
+            break
+
+    return {"articoli": articoli_out, "parti_ticket": parti_ticket}
 
 
 @router.get("/categorie")

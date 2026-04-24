@@ -98,6 +98,7 @@ export const magazzinoApi = {
   addMovimento: (id, data) => api.post(`/magazzino/articoli/${id}/movimenti`, data),
   sposta: (id, data) => api.post(`/magazzino/articoli/${id}/sposta`, data),
   cercaArticolo: (params) => api.get('/magazzino/cerca-articolo', { params }),
+  cercaParte: (q) => api.get('/magazzino/cerca-parte', { params: { q } }),
   categorie: () => api.get('/magazzino/categorie'),
   movimenti: (params) => api.get('/magazzino/movimenti', { params }),
   sottoMagazzini: (commitente) => api.get('/magazzino/sotto-magazzini', { params: commitente ? { commitente } : {} }),
