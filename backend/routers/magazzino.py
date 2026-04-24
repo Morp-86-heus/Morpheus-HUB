@@ -402,9 +402,9 @@ def cerca_articolo(
         return []
     q = db.query(Articolo).filter(Articolo.organizzazione_id == org_id)
     if seriale:
-        q = q.filter(Articolo.seriale == seriale)
+        q = q.filter(Articolo.seriale.ilike(seriale))
     elif cespite:
-        q = q.filter(Articolo.cespite == cespite)
+        q = q.filter(Articolo.cespite.ilike(cespite))
     if commitente:
         q = q.filter(Articolo.commitente == commitente)
     if cliente:

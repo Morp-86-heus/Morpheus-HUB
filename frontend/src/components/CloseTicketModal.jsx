@@ -23,21 +23,26 @@ function ParteRow({ parte, index, onChange, onRemove, ticket }) {
   // Cerca in magazzino quando cambia il seriale del ricambio
   useEffect(() => {
     const seriale = parte.ricambio_seriale?.trim()
-    if (!seriale || seriale.length < 2) { setArticoliTrovati([]); return }
+    if (!seriale || seriale.length < 2 || parte.ricambio_articolo_id) { setArticoliTrovati([]); return }
     clearTimeout(debounceRef.current)
     debounceRef.current = setTimeout(async () => {
       setCercando(true)
       try {
-        const res = await magazzinoApi.cercaArticolo({
-          seriale,
-          ...(ticket?.commitente ? { commitente: ticket.commitente } : {}),
-          ...(ticket?.cliente ? { cliente: ticket.cliente } : {}),
-        })
-        setArticoliTrovati(res.data)
+        const res = await magazzinoApi.cercaArticolo({ seriale })
+        if (res.data.length === 1) {
+          const art = res.data[0]
+          onChange(index, 'ricambio_articolo_id', art.id)
+          onChange(index, 'ricambio_descrizione', art.descrizione)
+          onChange(index, 'ricambio_modello', [art.marca, art.modello].filter(Boolean).join(' ') || art.descrizione)
+          onChange(index, 'ricambio_seriale', art.seriale || seriale)
+          setArticoliTrovati([])
+        } else {
+          setArticoliTrovati(res.data)
+        }
       } catch { setArticoliTrovati([]) }
       finally { setCercando(false) }
     }, 400)
-  }, [parte.ricambio_seriale])
+  }, [parte.ricambio_seriale, parte.ricambio_articolo_id])
 
   const collegaArticolo = (art) => {
     onChange(index, 'ricambio_articolo_id', art.id)
