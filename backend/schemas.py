@@ -180,6 +180,8 @@ class TicketBase(BaseModel):
     nr_progressivo: Optional[int] = None
     dispositivo: Optional[str] = None
     note_intervento: Optional[str] = None
+    parent_ticket_id: Optional[int] = None
+    numero_intervento: Optional[int] = 1
 
 
 class TicketCreate(TicketBase):
@@ -370,8 +372,11 @@ class ClienteDirettoOut(ClienteDirettoBase):
     sedi: List['SedeClienteDirettoOut'] = []
 
 
-class TicketOutWithChiusura(TicketOut):
-    pass
+class ChiudiTicketResponse(TicketOut):
+    followup_ticket_id: Optional[int] = None
+
+
+TicketOutWithChiusura = ChiudiTicketResponse  # alias backward-compat
 
 
 # ── Listini prezzi ────────────────────────────────────────────────────────────

@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import datetime, timezone, date
 from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, Query
 from fastapi.responses import StreamingResponse, FileResponse
@@ -295,7 +295,7 @@ def delete_ticket(
     db.commit()
 
 
-@router.post("/{ticket_id}/chiudi", response_model=schemas.TicketOutWithChiusura)
+@router.post("/{ticket_id}/chiudi", response_model=schemas.ChiudiTicketResponse)
 def chiudi_ticket(
     ticket_id: int,
     payload: schemas.TicketChiusuraCreate,
@@ -484,7 +484,38 @@ def chiudi_ticket(
     log_action("ticket.close", user=current_user, org_id=org_id,
                risorsa_tipo="ticket", risorsa_id=ticket_id,
                dettagli={"nr_intervento": obj.nr_intervento, "cliente": obj.cliente})
-    return obj
+
+    # Follow-up automatico per esito "Parzialmente risolto"
+    followup_id = None
+    if payload.esito == "Parzialmente risolto":
+        num_intervento = (obj.numero_intervento or 1) + 1
+        followup = Ticket(
+            commitente=obj.commitente,
+            cliente=obj.cliente,
+            nr_intervento=obj.nr_intervento,
+            utente=obj.utente,
+            citta=obj.citta,
+            tecnico=obj.tecnico,
+            dispositivo=obj.dispositivo,
+            sla_scadenza=obj.sla_scadenza,
+            stato="In gestione",
+            parent_ticket_id=ticket_id,
+            numero_intervento=num_intervento,
+            organizzazione_id=org_id,
+            data_gestione=date.today(),
+            note=f"Seguito del ticket #{ticket_id} — {num_intervento}° intervento",
+        )
+        db.add(followup)
+        db.commit()
+        db.refresh(followup)
+        followup_id = followup.id
+        log_action("ticket.followup_created", user=current_user, org_id=org_id,
+                   risorsa_tipo="ticket", risorsa_id=followup_id,
+                   dettagli={"parent_ticket_id": ticket_id, "numero_intervento": num_intervento})
+
+    result = schemas.ChiudiTicketResponse.model_validate(obj)
+    result.followup_ticket_id = followup_id
+    return result
 
 
 @router.get("/{ticket_id}/chiusura", response_model=schemas.TicketChiusuraOut)

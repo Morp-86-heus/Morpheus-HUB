@@ -908,6 +908,7 @@ export default function CloseTicketModal({ ticket, onClose, onClosed }) {
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState(null)
   const [saved, setSaved] = useState(false)
+  const [followupId, setFollowupId] = useState(null)
 
   // ── Listino ──
   const [listini, setListini] = useState([])
@@ -970,7 +971,8 @@ export default function CloseTicketModal({ ticket, onClose, onClosed }) {
         prestazioni: prestazioni.length > 0 ? prestazioni : undefined,
         documenti: documenti.filter(d => d.dataUrl).map(d => ({ nome: d.nome, dataUrl: d.dataUrl })),
       }
-      await ticketsApi.chiudi(ticket.id, payload)
+      const res = await ticketsApi.chiudi(ticket.id, payload)
+      if (res.data?.followup_ticket_id) setFollowupId(res.data.followup_ticket_id)
       setSaved(true)
       onClosed && onClosed()
     } catch (err) {
@@ -1015,6 +1017,13 @@ export default function CloseTicketModal({ ticket, onClose, onClosed }) {
               <p className="text-sm text-gray-500 mt-1">
                 Esito: <span className={`font-medium ${ESITO_COLORS[form.esito] || ''}`}>{form.esito}</span>
               </p>
+              {followupId && (
+                <div className="mt-3 px-4 py-2.5 bg-orange-50 border border-orange-200 rounded-lg text-sm text-orange-800">
+                  <span className="font-semibold">↩ Follow-up creato automaticamente</span>
+                  <br />
+                  Ticket <span className="font-mono font-bold">#{followupId}</span> aperto come {((ticket.numero_intervento || 1) + 1)}° intervento
+                </div>
+              )}
             </div>
             <div className="flex gap-3">
               <button

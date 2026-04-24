@@ -176,6 +176,12 @@ export default function TicketDetail({ ticket, onClose, onDeleted, onRefresh }) 
 
           {/* Body */}
           <dl className="flex-1 p-5 grid grid-cols-2 gap-4">
+            {ticket.parent_ticket_id && (
+              <div className="col-span-2 px-3 py-2 bg-orange-50 border border-orange-200 rounded-lg text-xs text-orange-700">
+                ↩ {ticket.numero_intervento}° intervento — seguito del ticket{' '}
+                <span className="font-bold font-mono">#{ticket.parent_ticket_id}</span>
+              </div>
+            )}
             <Field label="NR INT" value={ticket.nr_intervento} mono />
             <Field label="SLA" value={<SLABadge sla={ticket.sla_scadenza} stato={ticket.stato} />} />
             <Field label="Commitente" value={ticket.commitente} />

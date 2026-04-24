@@ -57,7 +57,14 @@ export default function TicketTable({ tickets, onSelect, onSort, orderBy, orderD
               onClick={() => onSelect && onSelect(t)}
               className="hover:bg-blue-50 cursor-pointer transition-colors"
             >
-              <td className="px-3 py-2 text-xs text-gray-400">{t.id}</td>
+              <td className="px-3 py-2 text-xs text-gray-400">
+                {t.id}
+                {t.numero_intervento > 1 && (
+                  <span className="ml-1 inline-block px-1 py-0.5 rounded bg-orange-100 text-orange-600 text-xs font-semibold" title={`Seguito del ticket #${t.parent_ticket_id}`}>
+                    ↩{t.numero_intervento}°
+                  </span>
+                )}
+              </td>
               <td className="px-3 py-2 text-sm font-medium">{t.commitente || '—'}</td>
               <td className="px-3 py-2 text-sm">{t.cliente || '—'}</td>
               <td className="px-3 py-2 text-sm font-mono text-xs">{t.nr_intervento || '—'}</td>
