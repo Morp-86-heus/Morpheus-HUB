@@ -503,7 +503,7 @@ def chiudi_ticket(
             numero_intervento=num_intervento,
             organizzazione_id=org_id,
             data_gestione=date.today(),
-            note=f"Seguito del ticket #{ticket_id} — {num_intervento}° intervento",
+            note=f"Seguito del ticket #{ticket_id} del {obj.data_gestione.strftime('%d/%m/%Y') if obj.data_gestione else date.today().strftime('%d/%m/%Y')} — {num_intervento}° intervento\n\n{obj.note or ''}".strip(),
         )
         db.add(followup)
         db.commit()
